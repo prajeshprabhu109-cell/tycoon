@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Supercar Dealer Tycoon - Ultra 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- OrbitControls for full camera interaction -->
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .garage-bg {
+            background: radial-gradient(circle at 20% 30%, #1e1b4b 0%, #020617 70%);
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            transition: background 1s ease;
+        }
+
+        .garage-bg.midnight { background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%); }
+        .garage-bg.prestige { background: radial-gradient(circle at 50% 50%, #1e293b 0%, #000000 100%); }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .glass-button {
+            width: 60px; height: 60px; flex-shrink: 0; border-radius: 50%;
+            background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(8px);
+            border: 2px solid rgba(56, 189, 248, 0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 0.2s ease; cursor: pointer;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+        }
+
+        .glass-button:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .goal-bar {
+            height: 4px; background: rgba(255,255,255,0.1); width: 100%;
+            position: fixed; top: 0; left: 0; z-index: 100;
+        }
+        .goal-fill {
+            height: 100%; background: linear-gradient(90deg, #22d3ee, #a855f7);
+            box-shadow: 0 0 10px #22d3ee; transition: width 1s ease-in-out;
+        }
+
+        /* News Ticker - Bottom Positioned */
+        #news-ticker {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(0,0,0,0.8); height: 28px; z-index: 500;
+            overflow: hidden; display: flex; align-items: center;
+            border-top: 1px solid rgba(56, 189, 248, 0.3); backdrop-filter: blur(10px);
+        }
+
+        .ticker-content {
+            white-space: nowrap; display: inline-block; padding-left: 100%;
+            animation: ticker 30s linear infinite; font-size: 10px;
+            font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1;
+        }
+
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        .modal-card {
+            position: fixed; left: 50%; bottom: 20%; width: 95%; max-width: 400px;
+            transform: translate(-50%, 150%); transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            opacity: 0; z-index: 1000; visibility: hidden; pointer-events: none;
+        }
+        .modal-card.active { transform: translate(-50%, 0); opacity: 1; visibility: visible; pointer-events: auto; }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8; font-size: 8px; border-radius: 6px;
+        }
+        .tab-btn.active { background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); color: white; }
+
+        #main-container {
+            flex: 1; display: grid; grid-template-columns: 280px 1fr 80px;
+            gap: 1rem; padding: 1rem; position: relative; z-index: 5;
+            height: calc(100vh - 140px); min-height: 0;
+        }
+
+        #three-container { width: 100%; height: 100%; position: relative; cursor: grab; }
+
+        @keyframes float-up {
+            0% { opacity: 0; transform: translateY(0); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+        .float-info {
+            position: absolute; font-weight: 900; font-size: 14px;
+            pointer-events: none; animation: float-up 1.5s ease-out forwards; z-index: 200;
+        }
+
+        #camera-flash {
+            position: fixed; inset: 0; background: white;
+            z-index: 3000; display: none; pointer-events: none;
+        }
+
+        #test-drive-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            z-index: 2000; display: none; flex-direction: column;
+            align-items: center; justify-content: center; backdrop-filter: blur(15px);
+        }
+
+        .gauge-container {
+            width: 300px; height: 24px; background: #1e293b;
+            border-radius: 12px; position: relative; overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .gauge-zone {
+            position: absolute; height: 100%; background: #22c55e;
+            box-shadow: 0 0 20px #22c55e; width: 40px; left: 130px;
+        }
+
+        .gauge-pointer {
+            position: absolute; height: 100%; width: 4px;
+            background: white; box-shadow: 0 0 10px white; left: 0;
+        }
+
+        @media (max-width: 1024px) { #main-container { grid-template-columns: 240px 1fr 75px; } }
+
+        @media (max-width: 768px) {
+            #main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; overflow-y: auto; padding-bottom: 120px; }
+            .action-column { flex-direction: row !important; width: 100%; justify-content: center; gap: 0.5rem; height: auto !important; padding: 1rem 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="goal-bar"><div id="goal-fill" class="goal-fill" style="width: 5%"></div></div>
+
+    <div id="garage-gradient" class="garage-bg"></div>
+    <div id="camera-flash"></div>
+
+    <div id="main-container">
+        <!-- Sidebar -->
+        <div class="flex flex-col gap-3 h-full min-h-0">
+            <div class="glass-panel p-4 flex-shrink-0">
+                <div class="flex justify-between items-center mb-1">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Global Capital</p>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] text-cyan-400">💎</span>
+                        <p id="diamonds-display" class="text-[10px] text-cyan-400 font-black">25</p>
+                    </div>
+                </div>
+                <h1 id="money-display" class="text-2xl font-black text-white">₹0</h1>
+
+                <div class="mt-3">
+                    <div class="flex justify-between items-end mb-1">
+                        <div class="flex items-center gap-2">
+                            <p id="car-name-display" class="text-[10px] text-slate-300 font-bold uppercase">---</p>
+                            <span id="trend-tag" class="hidden text-[7px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black animate-pulse">TRENDING</span>
+                        </div>
+                        <p id="percent-text" class="text-[10px] text-cyan-400 font-bold">0%</p>
+                    </div>
+                    <div class="w-full bg-slate-800/50 h-1.5 rounded-full overflow-hidden border border-white/5">
+                        <div id="progress-bar" class="h-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]" style="width: 0%"></div>
+                    </div>
+
+                    <div class="mt-3 flex justify-between items-center">
+                        <p class="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Brand Rep</p>
+                        <p id="brand-rep-display" class="text-[9px] text-purple-400 font-black">LVL 1</p>
+                    </div>
+
+                    <div class="mt-4 p-2 bg-black/30 rounded-lg border border-white/5">
+                        <div class="flex justify-between items-center text-[8px] font-black uppercase text-slate-500">
+                            <span>Power Rating</span>
+                            <span id="hp-display" class="text-orange-400">0 HP</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[8px] font-black uppercase text-slate-500 mt-1">
+                            <span>Top Speed</span>
+                            <span id="speed-display" class="text-cyan-400">0 km/h</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 flex-1 flex flex-col min-h-0">
+                <div class="grid grid-cols-3 gap-1 mb-2">
+                    <button onclick="setTab('staff')" id="tab-staff" class="tab-btn active py-2 font-black uppercase">Dealer</button>
+                    <button onclick="setTab('facility')" id="tab-facility" class="tab-btn py-2 font-black uppercase">Build</button>
+                    <button onclick="setTab('studio')" id="tab-studio" class="tab-btn py-2 font-black uppercase">Studio</button>
+                </div>
+                <div class="grid grid-cols-3 gap-1 mb-3">
+                    <button onclick="setTab('auction')" id="tab-auction" class="tab-btn py-2 font-black uppercase">Bid</button>
+                    <button onclick="setTab('sales')" id="tab-sales" class="tab-btn py-2 font-black uppercase">Sales</button>
+                    <button onclick="setTab('rank')" id="tab-rank" class="tab-btn py-2 font-black uppercase">Rank</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar pr-1">
+                    <div id="view-staff" class="space-y-4">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Showroom Management</p>
+                        <button onclick="hireMechanic()" class="btn-tap w-full py-4 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center justify-center">
+                            <span class="text-xs font-black text-white uppercase">Hire Master Mechanic</span>
+                            <span id="hire-cost" class="text-[10px] text-slate-400 font-bold mt-1">₹5,00,000</span>
+                        </button>
+                        <div class="p-3 bg-cyan-500/5 border border-cyan-500/10 rounded-xl">
+                            <p class="text-[9px] text-cyan-400 font-bold uppercase mb-1">Daily Reward</p>
+                            <button onclick="claimDaily()" id="daily-claim-btn" class="w-full py-2 bg-cyan-500 text-white text-[10px] font-black uppercase rounded-lg shadow-lg">Claim Bonus Reward</button>
+                        </div>
+                    </div>
+
+                    <div id="view-facility" class="hidden space-y-4">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Branch Expansion</p>
+                        <div id="branch-list" class="space-y-2">
+                            <!-- Branches go here -->
+                        </div>
+                        <div class="h-px bg-white/5 my-2"></div>
+                        <button onclick="upgradePrestige()" class="btn-tap w-full py-3 bg-purple-500/10 border border-purple-500/20 rounded-xl flex flex-col items-center">
+                            <span class="text-[10px] font-black text-white uppercase">Upgrade Showroom</span>
+                            <span id="prestige-cost-text" class="text-[8px] text-purple-400 font-bold">₹25,00,000</span>
+                        </button>
+                        <button onclick="buySlot()" class="btn-tap w-full py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex flex-col items-center">
+                            <span class="text-[10px] font-black text-white uppercase">New Garage Slot</span>
+                            <span id="slot-cost-text" class="text-[8px] text-cyan-400 font-bold">₹10,00,000</span>
+                        </button>
+                    </div>
+
+                    <div id="view-studio" class="hidden space-y-4">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase">Performance Tuning</p>
+                        <button onclick="tuneEngine()" class="btn-tap w-full py-3 bg-orange-500/10 border border-orange-500/20 rounded-xl flex flex-col items-center mb-2">
+                            <span class="text-xs font-black text-white uppercase">Stage Engine Up</span>
+                            <span id="engine-cost-text" class="text-[8px] text-orange-400 font-bold">₹2,50,000</span>
+                        </button>
+
+                        <div class="h-px bg-white/5 my-2"></div>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase">Material Finish</p>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <button onclick="setFinish('Standard')" class="py-2 bg-white/5 border border-white/10 rounded text-[7px] font-black uppercase text-white">Standard</button>
+                            <button onclick="setFinish('Matte')" class="py-2 bg-slate-800 border border-white/10 rounded text-[7px] font-black uppercase text-white">Matte (₹1L)</button>
+                            <button onclick="setFinish('Pearl')" class="py-2 bg-purple-900/30 border border-purple-500/30 rounded text-[7px] font-black uppercase text-purple-400">Pearl (₹3L)</button>
+                            <button onclick="setFinish('Chrome')" class="py-2 bg-cyan-900/30 border border-cyan-500/30 rounded text-[7px] font-black uppercase text-cyan-400">Chrome (5💎)</button>
+                        </div>
+                    </div>
+
+                    <div id="view-auction" class="hidden space-y-4">
+                        <div id="auction-active-panel" class="hidden space-y-3">
+                            <div class="bg-black/40 rounded-xl p-3 border border-white/5 text-center">
+                                <p id="auc-car-name" class="text-[9px] text-slate-500 uppercase font-black mb-1">---</p>
+                                <h2 id="auc-bid" class="text-lg font-black text-purple-400">₹0</h2>
+                                <p id="auc-timer" class="text-xs text-red-400 font-bold mt-1">10.0s</p>
+                            </div>
+                            <button onclick="placeAuctionBid()" id="bid-btn" class="btn-tap w-full py-4 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs rounded-xl shadow-lg uppercase">Place Bid (+₹10L)</button>
+                        </div>
+                        <button id="auc-entry-btn" onclick="enterAuctionQueue()" class="btn-tap w-full py-4 bg-slate-800 border border-white/10 rounded-xl font-black text-xs text-purple-400 uppercase">Enter Elite Event (₹1L)</button>
+                    </div>
+
+                    <div id="view-sales" class="hidden space-y-2">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sales Ledger</p>
+                        <div id="sales-ledger-list" class="space-y-2"></div>
+                    </div>
+
+                    <div id="view-rank" class="hidden space-y-2">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Global Leaderboard</p>
+                        <div id="leaderboard-list" class="space-y-2">
+                            <!-- Simulated leaderboard -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: 3D Visualization -->
+        <div class="relative h-full overflow-hidden">
+            <div id="three-container"></div>
+            <div id="float-container" class="absolute inset-0 pointer-events-none"></div>
+
+            <div class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur px-4 py-2 rounded-full border border-white/10 z-20 shadow-2xl">
+                <button onclick="prevInventoryCar()" class="text-sm text-slate-400 hover:text-white transition-colors">◀</button>
+                <div class="flex flex-col items-center min-w-[100px]">
+                    <p class="text-[7px] text-slate-500 uppercase font-black tracking-widest">Inventory</p>
+                    <p id="inv-count-display" class="text-[10px] font-bold text-white leading-none mt-0.5">0/1 Slots</p>
+                </div>
+                <button onclick="nextInventoryCar()" class="text-sm text-slate-400 hover:text-white transition-colors">▶</button>
+            </div>
+        </div>
+
+        <!-- Right Actions -->
+        <div class="action-column flex flex-col items-center justify-center gap-3 h-full overflow-y-auto no-scrollbar py-2">
+            <button onclick="repair()" class="glass-button">
+                <span class="text-[9px] font-black text-cyan-400 mb-1 uppercase">Repair</span>
+                <div class="w-8 h-1.5 bg-cyan-400/20 rounded-full overflow-hidden">
+                    <div id="repair-tiny-bar" class="h-full bg-cyan-400" style="width: 0%"></div>
+                </div>
+            </button>
+            <button onclick="detail()" id="detail-btn" class="glass-button border-purple-500/50">
+                <span class="text-[9px] font-black text-purple-400 mb-1 uppercase">Detail</span>
+                <div class="flex gap-1">
+                    <div id="d-dot-1" class="w-1.5 h-1.5 rounded-full bg-slate-700 transition-colors"></div>
+                    <div id="d-dot-2" class="w-1.5 h-1.5 rounded-full bg-slate-700 transition-colors"></div>
+                    <div id="d-dot-3" class="w-1.5 h-1.5 rounded-full bg-slate-700 transition-colors"></div>
+                </div>
+            </button>
+            <button onclick="toggleInterior()" class="glass-button border-cyan-500/50">
+                <span class="text-[9px] font-black text-cyan-400 mb-1 uppercase" id="view-mode-text">Inside</span>
+                <div class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_cyan]"></div>
+            </button>
+            <button onclick="startTestDrive()" class="glass-button border-orange-500/50">
+                <span class="text-[9px] font-black text-orange-400 mb-1 uppercase">Drive</span>
+                <div class="text-[7px] font-bold text-slate-500" id="perf-mult-text">x1.0</div>
+            </button>
+            <button onclick="takePhoto()" class="glass-button border-white/30">
+                <span class="text-[8px] font-black text-slate-300 mb-1 uppercase">Photo</span>
+                <div class="text-[12px]">📸</div>
+            </button>
+            <div id="offer-indicator" class="w-3 h-3 rounded-full bg-slate-800 transition-colors shadow-inner flex-shrink-0"></div>
+        </div>
+    </div>
+
+    <!-- News Ticker -->
+    <div id="news-ticker">
+        <div id="ticker-text" class="ticker-content">
+            Market Update: Ferrari F40 available for Elite Auction!... Audi R8 interior craftsmanship praised by critics... Lamborghini branding visible from every angle...
+        </div>
+    </div>
+
+    <!-- Marketplace -->
+    <div class="px-6 pb-6 mt-auto relative z-10">
+        <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-1 min-h-[100px]"></div>
+    </div>
+
+    <!-- VIP Negotiation Modal -->
+    <div id="customer-modal" class="modal-card glass-panel p-6 shadow-2xl border-t border-white/20">
+        <div class="flex items-center gap-4 mb-4">
+            <div id="customer-avatar" class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-2xl border border-purple-500/30">👤</div>
+            <div class="flex-1">
+                <p id="customer-name" class="text-sm font-black text-white uppercase tracking-tighter">Collector</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-[8px] text-slate-500 uppercase font-bold">Patience</p>
+                    <div class="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="patience-bar" class="h-full bg-green-400" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-black/40 rounded-2xl p-4 border border-white/10 mb-2 text-center">
+            <p id="customer-trait" class="text-[8px] text-cyan-400 font-black uppercase mb-1">Trait: None</p>
+            <h2 id="offer-price" class="text-2xl font-black text-green-400 tracking-tighter">₹0</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <button onclick="declineOffer()" class="btn-tap py-3 bg-red-500/10 text-red-400 text-[10px] font-black rounded-xl uppercase">Decline</button>
+            <button onclick="counterOffer()" class="btn-tap py-3 bg-orange-500/10 text-orange-400 text-[10px] font-black rounded-xl border border-orange-500/20 uppercase">Counter (+10%)</button>
+        </div>
+        <button onclick="acceptOffer()" class="btn-tap w-full py-4 bg-green-500 text-white text-xs font-black rounded-xl uppercase shadow-lg">Accept & Sell</button>
+    </div>
+
+    <!-- Test Drive -->
+    <div id="test-drive-overlay">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-black text-white uppercase tracking-tighter italic">Test Driving...</h2>
+            <p id="td-engine-status" class="text-orange-400 font-bold text-sm tracking-widest italic">STOCK ENGINE ACTIVE</p>
+        </div>
+        <div class="gauge-container">
+            <div id="gauge-zone" class="gauge-zone"></div>
+            <div id="gauge-pointer" class="gauge-pointer"></div>
+        </div>
+        <button onclick="performShift()" class="mt-12 px-12 py-6 bg-orange-500 text-white font-black rounded-2xl shadow-2xl shadow-orange-500/40 uppercase tracking-widest text-xl active:scale-95 transition-transform">SHIFT NOW!</button>
+    </div>
+
+    <script>
+        // --- HOISTED GLOBAL UTILITIES ---
+        function formatMoney(n) { return "₹" + Math.floor(n).toLocaleString('en-IN'); }
+
+        function triggerFloat(txt, color) {
+            const el = document.createElement('div'); el.className = 'float-info'; el.innerText = txt; el.style.color = color;
+            el.style.left = '50%'; el.style.top = '40%';
+            const fCont = document.getElementById('float-container');
+            if (fCont) fCont.appendChild(el);
+            setTimeout(() => { if(el && el.parentNode) el.parentNode.removeChild(el); }, 1500);
+        }
+
+        // --- 3D RENDER ENGINE ---
+        let scene, camera, renderer, currentModel, loader, controls;
+        let driveShake = 0, isInterior = false, currentActiveFile = "";
+        let ambLight, sunLight, rimLight, neonL, neonR, exhaustFlame;
+
+        function init3D() {
+            const container = document.getElementById('three-container');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, logarithmicDepthBuffer: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.physicallyCorrectLights = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 3; controls.maxDistance = 12;
+            controls.enablePan = false;
+
+            ambLight = new THREE.AmbientLight(0xffffff, 0.9); scene.add(ambLight);
+            sunLight = new THREE.DirectionalLight(0xffffff, 2.2); sunLight.position.set(5, 10, 5); scene.add(sunLight);
+            rimLight = new THREE.PointLight(0xa855f7, 1.5, 20); rimLight.position.set(-5, 5, -5); scene.add(rimLight);
+
+            camera.position.set(6, 2.5, 6); camera.lookAt(0, 0, 0);
+            loader = new THREE.GLTFLoader();
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            animate();
+        }
+
+        function generateDetailedCar(key, color, shine, trim) {
+            const group = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), metalness: 0.7, roughness: 0.3 });
+            const base = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.3, 1.3), bodyMat); base.name = "car_body";
+            group.add(base);
+            exhaustFlame = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.5, 8), new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0 }));
+            exhaustFlame.position.set(-1.3, 0.1, 0); exhaustFlame.rotation.z = Math.PI / 2;
+            group.add(exhaustFlame);
+            return group;
+        }
+
+        async function requestModel(filename, color, shine, trim, isRare) {
+            if (currentActiveFile === filename && currentModel && !state.forceUpdate) { updateMaterials(color, shine, trim, isRare); return; }
+            state.forceUpdate = false;
+            if (currentModel) scene.remove(currentModel);
+            currentActiveFile = filename;
+            const carKey = filename.replace('.glb', '').toLowerCase();
+
+            currentModel = generateDetailedCar(carKey, color, shine, trim);
+            scene.add(currentModel);
+
+            try {
+                if(filename.includes('.') && !filename.startsWith('data:')) {
+                    loader.load(filename, (gltf) => {
+                        scene.remove(currentModel);
+                        currentModel = gltf.scene;
+                        const box = new THREE.Box3().setFromObject(currentModel);
+                        const targetScale = (carKey === 'koenigsegg' || carKey === 'f40' || carKey === 'koenigsegg3' || carKey === 'gallardo') ? 4.0 : 3.5;
+                        currentModel.scale.setScalar(targetScale / Math.max(box.getSize(new THREE.Vector3()).x, 1));
+                        updateMaterials(color, shine, trim, isRare);
+                        scene.add(currentModel);
+                    });
+                }
+            } catch(e) {}
+        }
+
+        function updateMaterials(color, shine, trim, isRare) {
+            if (!currentModel) return;
+            const factor = state.condition / 100;
+            const currentCar = state.ownedCars[state.currentCarIndex] || state.auction.car;
+            const finish = currentCar ? (currentCar.finish || 'Standard') : 'Standard';
+
+            currentModel.traverse(n => {
+                if (n.isMesh && n.material) {
+                    const name = (n.name || "").toLowerCase();
+                    const matName = (n.material.name || "").toLowerCase();
+
+                    if (name.includes('backlight') || name.includes('tail') || name.includes('light')) {
+                        if (!name.includes('glass')) {
+                             n.material.color?.set(0xff0000);
+                             if (n.material.emissive) {
+                                 n.material.emissive.set(0xff0000);
+                                 n.material.emissiveIntensity = 3;
+                             }
+                             return;
+                        }
+                    }
+
+                    const isTrim = name.includes('trim') || matName.includes('trim') || name.includes('leather') || name.includes('seat') || name.includes('interior') || name.includes('dash');
+                    const isInteriorFixed = name.includes('glass') || name.includes('wheel') || name.includes('logo') || name.includes('chrome') || name.includes('window');
+
+                    if (isTrim) {
+                        n.material.color?.set(trim); n.material.map = null; n.material.needsUpdate = true;
+                        return;
+                    }
+
+                    const isBodyPart = (name.includes('body') || name.includes('paint') || matName.includes('paint') || name.includes('shell') || name.includes('exterior') || name.includes('skin') || name.includes('car')) && !isTrim && !isInteriorFixed;
+
+                    if (isBodyPart && !isRare) {
+                        n.material.color?.set(color);
+                        n.material.map = null;
+
+                        // Handle Finishes
+                        if (finish === 'Matte') {
+                            n.material.metalness = 0.0;
+                            n.material.roughness = 0.9;
+                            n.material.clearcoat = 0.0;
+                        } else if (finish === 'Pearl') {
+                            n.material.metalness = 0.4;
+                            n.material.roughness = 0.2;
+                            n.material.clearcoat = 1.0;
+                            n.material.clearcoatRoughness = 0.1;
+                        } else if (finish === 'Chrome') {
+                            n.material.metalness = 1.0;
+                            n.material.roughness = 0.0;
+                            n.material.clearcoat = 1.0;
+                        } else {
+                            n.material.metalness = (0.7 + (shine * 0.1)) * factor;
+                            n.material.roughness = (0.3 - (shine * 0.1)) + (1 - factor) * 0.5;
+                        }
+
+                        n.material.needsUpdate = true;
+                    } else if (isInteriorFixed && !name.includes('logo')) {
+                        if (!name.includes('glass') && !name.includes('window')) n.material.color?.set(0x0a0a0a);
+                    }
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            if (currentModel) {
+                if (isInterior) {
+                    camera.position.lerp(new THREE.Vector3(0.1, 0.5, 0.2), 0.08);
+                    camera.lookAt(0.8, 0.3, 0);
+                    currentModel.rotation.y = 0;
+                    if (controls) controls.enabled = false;
+                } else {
+                    if (controls) controls.enabled = !state.testDrive.active;
+                }
+                if (driveShake > 0) {
+                    currentModel.position.set((Math.random()-0.5)*driveShake, (Math.random()-0.5)*driveShake, 0);
+                } else {
+                    currentModel.position.set(0, 0, 0);
+                }
+            }
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        // --- TYCOON LOGIC ---
+        let state = {
+            money: 1500000, diamonds: 25, condition: 0, detailingLevel: 0, currentCarIndex: -1, staffCount: 0, prestige: 1, hype: 1.0, slots: 1,
+            brandRep: 1, globalMult: 1.0, dailyClaimed: false,
+            ownedCars: [], salesLog: [], activeTrend: null,
+            inventory: [
+                { name: "Mercedes CLA", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
+                { name: "BMW 3 Series", filename: '3series.glb', buyPrice: 2800000, color: "#1d4ed8", trim: "#111827", engine: 0, isRare: false, baseHP: 255, finish: 'Standard' },
+                { name: "Audi R8 V8", filename: 'r812.glb', buyPrice: 6500000, color: "#f8fafc", trim: "#111827", engine: 0, isRare: false, baseHP: 430, finish: 'Standard' },
+                { name: "Lambo Gallardo", filename: 'gallardo.glb', buyPrice: 8500000, color: "#eab308", trim: "#111827", engine: 0, isRare: false, baseHP: 520, finish: 'Standard' }
+            ],
+            rareCars: [
+                { name: "Ferrari F40", filename: 'f40.glb', baseBid: 45000000, isRare: true, baseHP: 478, finish: 'Standard' },
+                { name: "McLaren F1", filename: 'mclaren_f1.glb', baseBid: 85000000, isRare: true, baseHP: 627, finish: 'Standard' },
+                { name: "Koenigsegg Jesko", filename: 'koenigsegg3.glb', baseBid: 120000000, isRare: true, baseHP: 1280, finish: 'Standard' }
+            ],
+            branches: [
+                { name: "London Outlet", cost: 5000000, reqRep: 3, owned: false, bonus: 0.25 },
+                { name: "Tokyo HQ", cost: 15000000, reqRep: 7, owned: false, bonus: 0.50 }
+            ],
+            auction: { active: false, car: null, currentBid: 0, timer: 10, highBidder: "" },
+            testDrive: { active: false, pointerPos: 0, speed: 4, direction: 1, interval: null, zone: { left: 130, width: 40 } },
+            vipProfiles: [
+                { name: "Dubai Royal", avatar: "👳‍♂️", trait: "Wealthy (+40%)", wealth: 1.4, patienceDrain: 20 },
+                { name: "Tech Billionaire", avatar: "👓", trait: "Impatience", wealth: 1.6, patienceDrain: 30 },
+                { name: "Elite Pro Racer", avatar: "🏎️", trait: "Speed Fanatic (2x)", wealth: 2.0, patienceDrain: 15, minEngine: 3 },
+                { name: "Material Connoisseur", avatar: "🎨", trait: "Finish Lover", wealth: 1.8, patienceDrain: 22, minBeauty: 1.5 }
+            ]
+        };
+
+        // --- UI RENDER FUNCTIONS ---
+        function renderMarket() {
+            const list = document.getElementById('market-list'); if (!list) return;
+            list.innerHTML = state.inventory.map(car => `<div onclick="buyCar('${car.name}')" class="min-w-[190px] h-[85px] glass-panel p-4 cursor-pointer hover:border-white/40 transition-all shadow-xl"><p class="text-[9px] font-black uppercase text-slate-400">${car.name}</p><p class="text-[11px] text-cyan-400 font-bold mt-1">${formatMoney(car.buyPrice)}</p></div>`).join('');
+        }
+
+        function renderSales() {
+            const list = document.getElementById('sales-ledger-list'); if(!list) return;
+            if(state.salesLog.length === 0) { list.innerHTML = '<p class="text-[8px] text-slate-500 italic py-2">No sales yet.</p>'; return; }
+            list.innerHTML = state.salesLog.map(log => `<div class="bg-white/5 border border-white/10 rounded-lg p-2 flex justify-between items-center mb-1"><p class="text-[8px] font-bold text-white uppercase">${log.name}</p><p class="text-[9px] font-bold text-green-400">${formatMoney(log.price)}</p></div>`).join('');
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list'); if(!list) return;
+            const rivals = [
+                { name: "Sotheby's Elite", value: 450000000, rep: 25 },
+                { name: "Dubai Motors", value: 210000000, rep: 18 },
+                { name: "Euro Exotic", value: 120000000, rep: 12 },
+                { name: "YOU (Dealership)", value: state.money + (state.ownedCars.length * 1000000), rep: state.brandRep }
+            ].sort((a,b) => b.value - a.value);
+            list.innerHTML = rivals.map((r, i) => `
+                <div class="flex justify-between items-center p-2 bg-white/5 rounded border border-white/5">
+                    <span class="text-[9px] font-bold text-slate-500">#${i+1}</span>
+                    <span class="text-[9px] font-black ${r.name.includes('YOU') ? 'text-cyan-400' : 'text-white'}">${r.name}</span>
+                    <span class="text-[9px] font-bold text-green-400">${formatMoney(r.value)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderBranches() {
+            const list = document.getElementById('branch-list'); if(!list) return;
+            list.innerHTML = state.branches.map((b, i) => `
+                <button onclick="buyBranch(${i})" ${b.owned ? 'disabled' : ''} class="w-full p-3 bg-white/5 rounded-xl border border-white/10 flex justify-between items-center ${b.owned ? 'opacity-50' : 'hover:border-purple-400'}">
+                    <div class="text-left">
+                        <p class="text-[9px] font-black text-white uppercase">${b.name}</p>
+                        <p class="text-[7px] text-purple-400 font-bold">+${Math.floor(b.bonus*100)}% Global Price</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] font-bold text-cyan-400">${b.owned ? 'OWNED' : formatMoney(b.cost)}</p>
+                        ${!b.owned ? `<p class="text-[7px] text-slate-500">Req. Rep LVL ${b.reqRep}</p>` : ''}
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function updateUI() {
+            const get = id => document.getElementById(id);
+            if(get('money-display')) get('money-display').innerText = formatMoney(state.money);
+            if(get('diamonds-display')) get('diamonds-display').innerText = state.diamonds;
+            if(get('prestige-text')) get('prestige-text').innerText = `PRESTIGE ${state.prestige}`;
+            if(get('brand-rep-display')) get('brand-rep-display').innerText = `LVL ${state.brandRep}`;
+            if(get('inv-count-display')) get('inv-count-display').innerText = `${state.ownedCars.length}/${state.slots}`;
+            if(get('prestige-cost-text')) get('prestige-cost-text').innerText = formatMoney(state.prestige * 2500000);
+
+            // Daily Reward Button Limit Logic
+            const dailyBtn = get('daily-claim-btn');
+            if(dailyBtn) {
+                if(state.dailyClaimed) {
+                    dailyBtn.disabled = true;
+                    dailyBtn.style.opacity = 0.5;
+                    dailyBtn.innerText = "CLAIMED FOR TODAY";
+                } else {
+                    dailyBtn.disabled = false;
+                    dailyBtn.style.opacity = 1;
+                    dailyBtn.innerText = "Claim Bonus Reward";
+                }
+            }
+
+            const car = state.auction.active ? state.auction.car : state.ownedCars[state.currentCarIndex];
+            if (car) {
+                if(get('car-name-display')) get('car-name-display').innerText = car.name;
+                if(get('percent-text')) get('percent-text').innerText = state.condition + "%";
+                if(get('progress-bar')) get('progress-bar').style.width = state.condition + "%";
+                if(get('repair-tiny-bar')) get('repair-tiny-bar').style.width = state.condition + "%";
+
+                // Update Specs
+                const currentHP = car.baseHP + (car.engine * 150);
+                const currentSpeed = Math.floor(200 + (car.engine * 50) + (currentHP / 10));
+                if(get('hp-display')) get('hp-display').innerText = currentHP + " HP";
+                if(get('speed-display')) get('speed-display').innerText = currentSpeed + " km/h";
+
+                for(let i=1; i<=3; i++) {
+                    const dot = get(`d-dot-${i}`); if (dot) dot.style.backgroundColor = state.detailingLevel >= i ? '#a855f7' : '#334155';
+                }
+                const isTrending = state.activeTrend && (state.activeTrend.value === car.color || state.activeTrend.value === car.name);
+                if(get('trend-tag')) get('trend-tag').classList.toggle('hidden', !isTrending);
+                requestModel(car.filename, car.color || "#ffffff", state.detailingLevel, car.trim || "#111111", car.isRare);
+            } else {
+                if(get('car-name-display')) get('car-name-display').innerText = "STOCK YOUR GARAGE";
+                if(get('trend-tag')) get('trend-tag').classList.add('hidden');
+                if(get('hp-display')) get('hp-display').innerText = "0 HP";
+                if(get('speed-display')) get('speed-display').innerText = "0 km/h";
+                if (currentModel) scene.remove(currentModel);
+                currentActiveFile = "";
+            }
+
+            const aucPanel = get('auction-active-panel');
+            const aucEntry = get('auc-entry-btn');
+            if (state.auction.active) {
+                if(aucPanel) aucPanel.classList.remove('hidden');
+                if(aucEntry) aucEntry.classList.add('hidden');
+                if(get('auc-car-name')) get('auc-car-name').innerText = state.auction.car.name;
+                if(get('auc-bid')) get('auc-bid').innerText = formatMoney(state.auction.currentBid);
+                if(get('auc-timer')) get('auc-timer').innerText = state.auction.timer.toFixed(1) + "s";
+            } else {
+                if(aucPanel) aucPanel.classList.add('hidden');
+                if(aucEntry) aucEntry.classList.remove('hidden');
+            }
+
+            const modal = get('customer-modal');
+            const ind = get('offer-indicator');
+            if (state.currentCustomer) {
+                if(modal) modal.classList.add('active');
+                if(get('offer-price')) get('offer-price').innerText = formatMoney(state.currentCustomer.offer);
+                if(get('customer-name')) get('customer-name').innerText = state.currentCustomer.name;
+                if(get('customer-avatar')) get('customer-avatar').innerText = state.currentCustomer.avatar;
+                if(get('customer-trait')) get('customer-trait').innerText = "Trait: " + state.currentCustomer.trait;
+                const pbar = get('patience-bar');
+                if(pbar) pbar.style.width = state.currentCustomer.patience + '%';
+                if(ind) ind.className = 'w-3 h-3 rounded-full bg-green-500 shadow-[0_0_15px_#22c55e] animate-pulse';
+            } else {
+                if(modal) modal.classList.remove('active');
+                if(ind) ind.className = 'w-3 h-3 rounded-full bg-slate-800';
+            }
+            renderMarket(); renderSales(); renderLeaderboard(); renderBranches();
+        }
+
+        function buyBranch(i) {
+            const b = state.branches[i];
+            if (state.money >= b.cost && state.brandRep >= b.reqRep && !b.owned) {
+                state.money -= b.cost; b.owned = true; state.globalMult += b.bonus;
+                triggerFloat("NEW BRANCH OPENED!", "#a855f7"); updateUI();
+            } else { triggerFloat("NOT ELIGIBLE", "#ef4444"); }
+        }
+
+        function setTab(tab) {
+            state.activeTab = tab;
+            ['staff', 'facility', 'studio', 'auction', 'sales', 'rank'].forEach(t => {
+                const el = document.getElementById(`view-${t}`); if(el) el.classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`tab-${t}`); if(btn) btn.classList.toggle('active', t === tab);
+            });
+            updateUI();
+        }
+
+        function buyCar(name) {
+            if(state.ownedCars.length >= state.slots) { triggerFloat("GARAGE FULL!", "#ef4444"); return; }
+            const car = state.inventory.find(c => c.name === name);
+            if (state.money >= car.buyPrice) {
+                state.money -= car.buyPrice;
+                state.ownedCars.push({...car, condition: 30, engine: 0, trim: "#111827", isRare: false, finish: 'Standard'});
+                state.currentCarIndex = state.ownedCars.length - 1; state.condition = 30; updateUI();
+            } else { triggerFloat("NEED MORE ₹", "#ef4444"); }
+        }
+
+        function repair() { if (state.currentCarIndex === -1) return; if (state.condition < 100) { state.condition = Math.min(100, state.condition + 5); if (state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; updateUI(); } }
+        function detail() { if (state.currentCarIndex === -1) return; if (state.detailingLevel < 3 && state.condition >= 90) { state.detailingLevel++; updateUI(); } }
+        function hireMechanic() { if (state.money >= 500000) { state.money -= 500000; state.staffCount++; updateUI(); } }
+        function buySlot() { if (state.money >= state.slots * 1000000) { state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); } }
+        function launchMarketing() { if (state.money >= 50000) { state.money -= 50000; state.hype = Math.min(5.0, state.hype + 0.5); updateUI(); } }
+        function upgradePrestige() { const cost = state.prestige * 2500000; if (state.money >= cost) { state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); } else { triggerFloat("NEED MORE ₹", "#ef4444"); } }
+
+        function claimDaily() {
+            if (state.dailyClaimed) return;
+            state.money += 500000;
+            state.diamonds += 10;
+            state.dailyClaimed = true;
+            triggerFloat("₹5L + 10💎 CLAIMED", "#22d3ee");
+            updateUI();
+        }
+
+        function changeTheme(t) { state.envTheme = t; const bg = document.getElementById('garage-gradient'); if(bg) bg.className = 'garage-bg ' + t; }
+        function toggleInterior() { if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
+        function respray(c) { if (state.currentCarIndex !== -1 && state.money >= 50000) { state.money -= 50000; state.ownedCars[state.currentCarIndex].color = c; updateUI(); } }
+        function tuneEngine() { if (state.currentCarIndex !== -1) { const car = state.ownedCars[state.currentCarIndex]; if (state.money >= 250000 && car.engine < 3) { state.money -= 250000; car.engine++; updateUI(); } } }
+        function setFinish(f) { if (state.currentCarIndex === -1) return; const car = state.ownedCars[state.currentCarIndex]; if (f === 'Matte' && state.money >= 100000) { state.money -= 100000; car.finish = f; } else if (f === 'Pearl' && state.money >= 300000) { state.money -= 300000; car.finish = f; } else if (f === 'Chrome' && state.diamonds >= 5) { state.diamonds -= 5; car.finish = f; } else if (f === 'Standard') { car.finish = f; } else { triggerFloat("NOT ENOUGH FUNDS", "#ef4444"); return; } state.forceUpdate = true; triggerFloat(f.toUpperCase() + " FINISH", "#22d3ee"); updateUI(); }
+
+        function takePhoto() {
+            if (state.currentCarIndex === -1) return;
+            const fl = document.getElementById('camera-flash'); if(fl) fl.style.display = 'block';
+            setTimeout(() => { if(fl) fl.style.display = 'none'; }, 50);
+            state.hype = Math.min(5.0, state.hype + 0.3); triggerFloat("HYPE UP!", "#fbbf24"); updateUI();
+        }
+
+        function prevInventoryCar() { if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
+        function nextInventoryCar() { if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
+
+        function performShift() {
+            clearInterval(state.testDrive.interval); const pos = state.testDrive.pointerPos;
+            if (pos >= 130 && pos <= 170) { state.performanceMult += 0.3; triggerFloat("PERFECT SHIFT!", "#22c55e"); if (exhaustFlame) { const car = state.ownedCars[state.currentCarIndex]; if (car && car.engine >= 3) exhaustFlame.material.color.set(0x00ffff); else exhaustFlame.material.color.set(0xff4400); exhaustFlame.material.opacity = 1; setTimeout(() => { if(exhaustFlame) exhaustFlame.material.opacity = 0; }, 200); } }
+            else { state.condition -= 15; if(state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; }
+            const ov = document.getElementById('test-drive-overlay'); if(ov) ov.style.display = 'none';
+            state.testDrive.active = false; driveShake = 0; updateUI();
+        }
+
+        function startTestDrive() {
+            if (state.currentCarIndex === -1 || state.condition < 80 || state.testDrive.active) { triggerFloat("Repair Required", "#ef4444"); return; }
+            state.testDrive.active = true; state.testDrive.pointerPos = 0;
+            const ov = document.getElementById('test-drive-overlay'); if(ov) ov.style.display = 'flex';
+            const car = state.ownedCars[state.currentCarIndex];
+            if(document.getElementById('td-engine-status')) document.getElementById('td-engine-status').innerText = car.engine > 0 ? `STAGE ${car.engine} ENGINE ACTIVE` : "STOCK ENGINE ACTIVE";
+            state.testDrive.interval = setInterval(() => {
+                state.testDrive.pointerPos += 4 * (state.testDrive.direction || 1);
+                if (state.testDrive.pointerPos >= 300) state.testDrive.direction = -1;
+                if (state.testDrive.pointerPos <= 0) state.testDrive.direction = 1;
+                const ptr = document.getElementById('gauge-pointer'); if(ptr) ptr.style.left = state.testDrive.pointerPos + 'px';
+            }, 16);
+        }
+
+        function enterAuctionQueue() {
+            if (state.ownedCars.length >= state.slots) { triggerFloat("GARAGE FULL!", "#ef4444"); return; }
+            if (state.money < 100000) { triggerFloat("NEED ₹1L", "#ef4444"); return; }
+            state.money -= 100000;
+            const rare = state.rareCars[Math.floor(Math.random() * state.rareCars.length)];
+            state.auction = { active: true, car: rare, currentBid: rare.baseBid, timer: 10, highBidder: "" };
+            updateUI();
+            state.auction.interval = setInterval(() => {
+                state.auction.timer -= 0.1;
+                if (Math.random() > 0.96) { state.auction.currentBid += 1000000; state.auction.highBidder = "Dubai Sheikh"; state.auction.timer = Math.min(10, state.auction.timer + 1); }
+                if (state.auction.timer <= 0) {
+                    clearInterval(state.auction.interval);
+                    if (state.auction.highBidder === "YOU") {
+                        state.money -= state.auction.currentBid;
+                        state.ownedCars.push({...state.auction.car, buyPrice: state.auction.currentBid, condition: 40, engine: 1, rim: 'stock', spoiler: true, trim: "#991b1b", finish: 'Standard'});
+                        state.currentCarIndex = state.ownedCars.length - 1; state.condition = 40; triggerFloat("WON AUCTION!", "#a855f7");
+                    } else { triggerFloat("LOST AUCTION", "#ef4444"); }
+                    state.auction.active = false; updateUI();
+                }
+                updateUI();
+            }, 100);
+        }
+
+        function placeAuctionBid() { if (state.money >= state.auction.currentBid + 1000000) { state.auction.currentBid += 1000000; state.auction.highBidder = "YOU"; state.auction.timer = Math.min(10, state.auction.timer + 2); } }
+
+        function acceptOffer() {
+            if (state.currentCustomer) {
+                const car = state.ownedCars[state.currentCarIndex];
+                let beautyMult = 1.0;
+                if (car.finish === 'Matte') beautyMult = 1.2;
+                else if (car.finish === 'Pearl') beautyMult = 1.4;
+                else if (car.finish === 'Chrome') beautyMult = 1.7;
+                let salePrice = state.currentCustomer.offer * (1 + (state.prestige * 0.1)) * beautyMult * state.globalMult;
+                if(state.activeTrend && (state.activeTrend.value === car.color || state.activeTrend.value === car.name)) { salePrice *= 1.5; triggerFloat("TREND BONUS!", "#22c55e"); }
+                state.salesLog.push({ name: car.name, buyer: state.currentCustomer.name, price: salePrice });
+                state.money += salePrice;
+                if (salePrice > 5000000) state.brandRep++;
+                state.ownedCars.splice(state.currentCarIndex, 1);
+                state.currentCarIndex = state.ownedCars.length - 1;
+                state.condition = state.currentCarIndex !== -1 ? state.ownedCars[state.currentCarIndex].condition : 0;
+                state.currentCustomer = null; updateUI(); triggerFloat("SOLD! 💸", "#22c55e");
+            }
+        }
+
+        function declineOffer() { state.currentCustomer = null; updateUI(); }
+        function counterOffer() { if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
+
+        function updateTrends() {
+            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Mercedes CLA', label: 'CLA VALUES SPIKING (1.5x Bonus)' }];
+            state.activeTrend = trends[Math.floor(Math.random() * trends.length)];
+            const t = document.getElementById('ticker-text'); if(t) t.innerText = `Market Update: ${state.activeTrend.label} ... Opening new Global Branches ... Showroom Prestige increases appraisal value ...`;
+            updateUI();
+        }
+
+        function checkArrival() {
+            if (state.currentCarIndex !== -1 && state.condition >= 90 && !state.currentCustomer && !state.auction.active && Math.random() > (0.8 / state.hype)) {
+                const car = state.ownedCars[state.currentCarIndex];
+                let pool = state.vipProfiles.slice(0, 2);
+                if (car.engine >= state.vipProfiles[2].minEngine) pool.push(state.vipProfiles[2]);
+                let beautyVal = car.finish === 'Chrome' ? 1.7 : (car.finish === 'Pearl' ? 1.4 : 1.0);
+                if (beautyVal >= state.vipProfiles[3].minBeauty) pool.push(state.vipProfiles[3]);
+                const vip = pool[Math.floor(Math.random() * pool.length)];
+                state.currentCustomer = { ...vip, offer: car.buyPrice * 1.4 * vip.wealth * state.hype, patience: 100 };
+                updateUI();
+            }
+        }
+
+        window.onload = () => {
+            init3D();
+            if (state.inventory[0]) {
+                state.money -= state.inventory[0].buyPrice;
+                state.ownedCars.push({...state.inventory[0], condition: 65, engine: 0, rim: 'stock', spoiler: false, trim: "#7c2d12", isRare: false, finish: 'Standard'});
+                state.currentCarIndex = 0; state.condition = 65;
+            }
+            updateTrends(); updateUI();
+            setInterval(updateTrends, 60000);
+            setInterval(() => {
+                if (state.staffCount > 0 && state.currentCarIndex !== -1 && state.condition < 100) {
+                    state.condition = Math.min(100, state.condition + (state.staffCount * 0.5));
+                    if(state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition;
+                    updateUI();
+                }
+                state.hype = Math.max(1.0, state.hype - 0.005);
+                checkArrival();
+            }, 3000);
+        };
+    </script>
+</body>
+</html>
