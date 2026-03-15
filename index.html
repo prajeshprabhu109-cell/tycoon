@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
-    <!-- OrbitControls for full camera interaction -->
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
@@ -160,7 +159,6 @@
     <div id="camera-flash"></div>
 
     <div id="main-container">
-        <!-- Sidebar -->
         <div class="flex flex-col gap-3 h-full min-h-0">
             <div class="glass-panel p-4 flex-shrink-0">
                 <div class="flex justify-between items-center mb-1">
@@ -171,6 +169,10 @@
                     </div>
                 </div>
                 <h1 id="money-display" class="text-2xl font-black text-white">₹0</h1>
+
+                <button onclick="window.location.href='vip.html'" class="mt-3 w-full py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-300/50 hover:scale-105 transition-transform">
+                    Enter VIP Vault 👑
+                </button>
 
                 <div class="mt-3">
                     <div class="flex justify-between items-end mb-1">
@@ -230,8 +232,7 @@
                     <div id="view-facility" class="hidden space-y-4">
                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Branch Expansion</p>
                         <div id="branch-list" class="space-y-2">
-                            <!-- Branches go here -->
-                        </div>
+                            </div>
                         <div class="h-px bg-white/5 my-2"></div>
                         <button onclick="upgradePrestige()" class="btn-tap w-full py-3 bg-purple-500/10 border border-purple-500/20 rounded-xl flex flex-col items-center">
                             <span class="text-[10px] font-black text-white uppercase">Upgrade Showroom</span>
@@ -280,14 +281,12 @@
                     <div id="view-rank" class="hidden space-y-2">
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Global Leaderboard</p>
                         <div id="leaderboard-list" class="space-y-2">
-                            <!-- Simulated leaderboard -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Center: 3D Visualization -->
         <div class="relative h-full overflow-hidden">
             <div id="three-container"></div>
             <div id="float-container" class="absolute inset-0 pointer-events-none"></div>
@@ -302,7 +301,6 @@
             </div>
         </div>
 
-        <!-- Right Actions -->
         <div class="action-column flex flex-col items-center justify-center gap-3 h-full overflow-y-auto no-scrollbar py-2">
             <button onclick="repair()" class="glass-button">
                 <span class="text-[9px] font-black text-cyan-400 mb-1 uppercase">Repair</span>
@@ -334,19 +332,16 @@
         </div>
     </div>
 
-    <!-- News Ticker -->
     <div id="news-ticker">
         <div id="ticker-text" class="ticker-content">
-            Market Update: Ferrari F40 available for Elite Auction!... Audi R8 interior craftsmanship praised by critics... Lamborghini branding visible from every angle...
+            Market Update: Cavallo V40 available for Elite Auction!... Auris V8 interior craftsmanship praised by critics... Torino branding visible from every angle... Billionaire tech genius spotted buying hypercars...
         </div>
     </div>
 
-    <!-- Marketplace -->
     <div class="px-6 pb-6 mt-auto relative z-10">
         <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-1 min-h-[100px]"></div>
     </div>
 
-    <!-- VIP Negotiation Modal -->
     <div id="customer-modal" class="modal-card glass-panel p-6 shadow-2xl border-t border-white/20">
         <div class="flex items-center gap-4 mb-4">
             <div id="customer-avatar" class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-2xl border border-purple-500/30">👤</div>
@@ -371,7 +366,6 @@
         <button onclick="acceptOffer()" class="btn-tap w-full py-4 bg-green-500 text-white text-xs font-black rounded-xl uppercase shadow-lg">Accept & Sell</button>
     </div>
 
-    <!-- Test Drive -->
     <div id="test-drive-overlay">
         <div class="text-center mb-8">
             <h2 class="text-3xl font-black text-white uppercase tracking-tighter italic">Test Driving...</h2>
@@ -554,21 +548,21 @@
             if (renderer && scene && camera) renderer.render(scene, camera);
         }
 
-        // --- TYCOON LOGIC ---
-        let state = {
+        // --- TYCOON LOGIC & SAVE SYSTEM ---
+        const defaultState = {
             money: 1500000, diamonds: 25, condition: 0, detailingLevel: 0, currentCarIndex: -1, staffCount: 0, prestige: 1, hype: 1.0, slots: 1,
             brandRep: 1, globalMult: 1.0, dailyClaimed: false,
             ownedCars: [], salesLog: [], activeTrend: null,
             inventory: [
-                { name: "Mercedes CLA", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
-                { name: "BMW 3 Series", filename: '3series.glb', buyPrice: 2800000, color: "#1d4ed8", trim: "#111827", engine: 0, isRare: false, baseHP: 255, finish: 'Standard' },
-                { name: "Audi R8 V8", filename: 'r812.glb', buyPrice: 6500000, color: "#f8fafc", trim: "#111827", engine: 0, isRare: false, baseHP: 430, finish: 'Standard' },
-                { name: "Lambo Gallardo", filename: 'gallardo.glb', buyPrice: 8500000, color: "#eab308", trim: "#111827", engine: 0, isRare: false, baseHP: 520, finish: 'Standard' }
+                { name: "MERCEDES CLA", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
+                { name: "BMW 3 SERIES", filename: '3series.glb', buyPrice: 2800000, color: "#1d4ed8", trim: "#111827", engine: 0, isRare: false, baseHP: 255, finish: 'Standard' },
+                { name: "AUDI R8", filename: 'r812.glb', buyPrice: 6500000, color: "#f8fafc", trim: "#111827", engine: 0, isRare: false, baseHP: 430, finish: 'Standard' },
+                { name: "LAMBORGHINI GALLARDO", filename: 'gallardo.glb', buyPrice: 8500000, color: "#eab308", trim: "#111827", engine: 0, isRare: false, baseHP: 520, finish: 'Standard' }
             ],
             rareCars: [
-                { name: "Ferrari F40", filename: 'f40.glb', baseBid: 45000000, isRare: true, baseHP: 478, finish: 'Standard' },
-                { name: "McLaren F1", filename: 'mclaren_f1.glb', baseBid: 85000000, isRare: true, baseHP: 627, finish: 'Standard' },
-                { name: "Koenigsegg Jesko", filename: 'koenigsegg3.glb', baseBid: 120000000, isRare: true, baseHP: 1280, finish: 'Standard' }
+                { name: "FERRARI F40", filename: 'f40.glb', baseBid: 45000000, isRare: true, baseHP: 478, finish: 'Standard' },
+                { name: "MCLAREN", filename: 'mclaren_f1.glb', baseBid: 85000000, isRare: true, baseHP: 627, finish: 'Standard' },
+                { name: "KOENIGSEGG JESKO", filename: 'koenigsegg3.glb', baseBid: 120000000, isRare: true, baseHP: 1280, finish: 'Standard' }
             ],
             branches: [
                 { name: "London Outlet", cost: 5000000, reqRep: 3, owned: false, bonus: 0.25 },
@@ -583,6 +577,24 @@
                 { name: "Material Connoisseur", avatar: "🎨", trait: "Finish Lover", wealth: 1.8, patienceDrain: 22, minBeauty: 1.5 }
             ]
         };
+
+        let state;
+        try {
+            const savedState = localStorage.getItem('aevith_tycoon_save');
+            state = savedState ? JSON.parse(savedState) : defaultState;
+        } catch (e) {
+            state = defaultState;
+        }
+
+        function saveGame() {
+            // Remove active intervals from state before saving to prevent JSON errors
+            const stateToSave = {
+                ...state,
+                testDrive: { ...state.testDrive, interval: null },
+                auction: { ...state.auction, interval: null }
+            };
+            localStorage.setItem('aevith_tycoon_save', JSON.stringify(stateToSave));
+        }
 
         // --- UI RENDER FUNCTIONS ---
         function renderMarket() {
@@ -709,6 +721,7 @@
                 if(ind) ind.className = 'w-3 h-3 rounded-full bg-slate-800';
             }
             renderMarket(); renderSales(); renderLeaderboard(); renderBranches();
+            saveGame(); // Save progress automatically after every UI update
         }
 
         function buyBranch(i) {
@@ -754,7 +767,7 @@
             updateUI();
         }
 
-        function changeTheme(t) { state.envTheme = t; const bg = document.getElementById('garage-gradient'); if(bg) bg.className = 'garage-bg ' + t; }
+        function changeTheme(t) { state.envTheme = t; const bg = document.getElementById('garage-gradient'); if(bg) bg.className = 'garage-bg ' + t; saveGame(); }
         function toggleInterior() { if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
         function respray(c) { if (state.currentCarIndex !== -1 && state.money >= 50000) { state.money -= 50000; state.ownedCars[state.currentCarIndex].color = c; updateUI(); } }
         function tuneEngine() { if (state.currentCarIndex !== -1) { const car = state.ownedCars[state.currentCarIndex]; if (state.money >= 250000 && car.engine < 3) { state.money -= 250000; car.engine++; updateUI(); } } }
@@ -840,7 +853,7 @@
         function counterOffer() { if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
 
         function updateTrends() {
-            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Mercedes CLA', label: 'CLA VALUES SPIKING (1.5x Bonus)' }];
+            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'MERCEDES CLA', label: 'C-LINE VALUES SPIKING (1.5x Bonus)' }];
             state.activeTrend = trends[Math.floor(Math.random() * trends.length)];
             const t = document.getElementById('ticker-text'); if(t) t.innerText = `Market Update: ${state.activeTrend.label} ... Opening new Global Branches ... Showroom Prestige increases appraisal value ...`;
             updateUI();
@@ -861,10 +874,13 @@
 
         window.onload = () => {
             init3D();
-            if (state.inventory[0]) {
+            if (state.ownedCars.length === 0 && state.inventory[0]) {
                 state.money -= state.inventory[0].buyPrice;
                 state.ownedCars.push({...state.inventory[0], condition: 65, engine: 0, rim: 'stock', spoiler: false, trim: "#7c2d12", isRare: false, finish: 'Standard'});
                 state.currentCarIndex = 0; state.condition = 65;
+            } else if (state.ownedCars.length > 0) {
+                state.currentCarIndex = 0;
+                state.condition = state.ownedCars[0].condition;
             }
             updateTrends(); updateUI();
             setInterval(updateTrends, 60000);

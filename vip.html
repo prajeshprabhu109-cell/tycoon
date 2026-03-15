@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Supercar Tycoon - VIP Executive Vault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #fbbf24;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gold-gradient {
+            background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .vip-glass {
+            background: rgba(20, 15, 5, 0.85);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .gold-btn {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            color: #000;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 14px;
+            border-radius: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+        }
+        .gold-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 8px 25px rgba(217, 119, 6, 0.5);
+        }
+
+        .vip-sidebar {
+            width: 320px;
+            height: calc(100vh - 40px);
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        #three-container { flex: 1; position: relative; cursor: grab; }
+
+        .vip-badge {
+            font-size: 8px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border: 1px solid #fbbf24;
+            color: #fbbf24;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #float-container { position: absolute; inset: 0; pointer-events: none; z-index: 100; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .hud-top-center {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        .animate-shimmer { animation: shimmer 3s infinite; }
+    </style>
+</head>
+<body onclick="unlockAudio()">
+
+    <div class="gold-gradient"></div>
+
+    <div class="flex h-full relative z-10">
+        <div class="vip-sidebar vip-glass p-8">
+            <div class="flex justify-between items-center mb-10">
+                <span class="vip-badge animate-shimmer">EXECUTIVE VIP</span>
+                <button onclick="window.location.href='index.html'" class="text-[9px] font-black text-stone-500 uppercase hover:text-white transition-colors">Exit Vault ◀</button>
+            </div>
+
+            <div class="mb-12 text-center">
+                <p class="text-[10px] text-amber-500/50 font-black uppercase tracking-[0.4em] mb-2">Vault Balance</p>
+                <h1 id="vip-money" class="text-4xl font-black text-white italic tracking-tighter">₹0</h1>
+                <div class="flex justify-center items-center gap-2 mt-4">
+                    <span class="text-cyan-400">💎</span>
+                    <p id="vip-diamonds" class="text-[11px] text-cyan-400 font-black tracking-widest">0</p>
+                </div>
+            </div>
+
+            <div class="flex-1 space-y-6 no-scrollbar overflow-y-auto">
+                <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3">Elite Customization</p>
+
+                <button onclick="applyLuxuryFinish('Gold')" class="gold-btn w-full flex flex-col items-center">
+                    <span>24K Gold Nano-Plating</span>
+                    <span class="text-[7px] opacity-70 mt-1 uppercase italic tracking-normal font-normal">Apply Elite Shader (100💎)</span>
+                </button>
+
+                <button onclick="applyLuxuryFinish('Carbon')" class="w-full py-4 bg-stone-900/50 border border-stone-800 rounded-xl text-[10px] font-black text-stone-400 uppercase tracking-widest hover:border-amber-500/50 hover:text-amber-500 transition-all">
+                    Forged Carbon Finish
+                </button>
+
+                <div class="h-px bg-amber-500/10 my-6"></div>
+
+                <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3">Elite Contracts</p>
+                <div class="p-4 bg-black/40 border border-amber-500/10 rounded-xl group hover:border-amber-500/30 transition-all">
+                    <p class="text-[10px] font-black text-white uppercase group-hover:text-amber-500">The Monaco Syndicate</p>
+                    <p class="text-[8px] text-stone-500 mt-2 uppercase italic leading-relaxed">Deliver a 100% condition Asset</p>
+                    <p class="text-[10px] text-green-400 font-bold mt-4">Payout: ₹50,00,00,000</p>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-6 border-t border-amber-500/10 text-center">
+                <p class="text-[8px] text-stone-700 uppercase font-black tracking-[0.3em]">Encrypted Session v1.0</p>
+            </div>
+        </div>
+
+        <div id="three-container">
+            <div class="hud-top-center vip-glass px-10 py-5 flex items-center gap-12 shadow-2xl border-amber-500/20">
+                 <button onclick="prevCar()" class="text-amber-500 text-2xl hover:scale-125 transition-transform">◀</button>
+                 <div class="text-center min-w-[180px]">
+                     <p id="car-name" class="text-xs font-black text-white uppercase tracking-[0.3em] italic">---</p>
+                     <p class="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">Master-Tier Asset</p>
+                 </div>
+                 <button onclick="nextCar()" class="text-amber-500 text-2xl hover:scale-125 transition-transform">▶</button>
+            </div>
+            <div id="float-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL SAVE SYSTEM INTEGRATION ---
+        let state = {};
+
+        function loadGame() {
+            try {
+                const savedState = localStorage.getItem('aevith_tycoon_save');
+                if (savedState) {
+                    state = JSON.parse(savedState);
+                } else {
+                    // Fallback if they somehow reached VIP without playing main game
+                    state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
+                }
+            } catch (e) {
+                state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
+            }
+
+            // Ensure they have the VIP exclusive cars in their garage
+            const vipCars = [
+                { name: "Bouvetti Centurion", filename: "bug.glb", finish: "Standard", buyPrice: 50000000 },
+                { name: "Pegasus Zephyr", filename: "pag.glb", finish: "Standard", buyPrice: 40000000 },
+                { name: "Torino Rebelto", filename: "lamrev.glb", finish: "Standard", buyPrice: 35000000 },
+                { name: "Stuttgart 99-GT", filename: "por.glb", finish: "Standard", buyPrice: 25000000 },
+                { name: "Ashton Vanguard", filename: "aston.glb", finish: "Standard", buyPrice: 45000000 },
+                { name: "Meister C-Line", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
+
+            ];
+
+            // Add VIP cars to garage if they don't already own them
+            vipCars.forEach(vipCar => {
+                if (!state.ownedCars.some(car => car.name === vipCar.name)) {
+                    state.ownedCars.push(vipCar);
+                }
+            });
+
+            // Set index to the first VIP car
+            state.currentCarIndex = state.ownedCars.findIndex(car => car.name === "Bouvetti Centurion");
+            if(state.currentCarIndex === -1) state.currentCarIndex = 0;
+        }
+
+        function saveGame() {
+            // Clean up intervals before saving
+            const stateToSave = {
+                ...state,
+                testDrive: state.testDrive ? { ...state.testDrive, interval: null } : {},
+                auction: state.auction ? { ...state.auction, interval: null } : {}
+            };
+            localStorage.setItem('aevith_tycoon_save', JSON.stringify(stateToSave));
+        }
+
+        const formatMoney = (n) => "₹" + Math.floor(n).toLocaleString('en-IN');
+
+        function triggerFloat(txt, color) {
+            const el = document.createElement('div');
+            el.className = 'float-info absolute font-black text-base z-[100] pointer-events-none uppercase italic tracking-widest';
+            el.innerText = txt; el.style.color = color; el.style.left = '50%'; el.style.top = '40%';
+            document.getElementById('float-container').appendChild(el);
+            let y = 40; let op = 1;
+            const anim = setInterval(() => {
+                y -= 0.5; op -= 0.02; el.style.top = y + '%'; el.style.opacity = op;
+                if(op <= 0) { clearInterval(anim); el.remove(); }
+            }, 16);
+        }
+
+        // --- 3D ENGINE ---
+        let scene, camera, renderer, controls, currentModel, currentFile = "", loader;
+
+        function init3D() {
+            const container = document.getElementById('three-container');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(28, container.clientWidth / container.clientHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, logarithmicDepthBuffer: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = 1.8;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.4;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+
+            const sun = new THREE.DirectionalLight(0xffffff, 2.5);
+            sun.position.set(10, 15, 10);
+            scene.add(sun);
+
+            const rim = new THREE.PointLight(0xffffff, 3, 25);
+            rim.position.set(-10, 5, -10);
+            scene.add(rim);
+
+            camera.position.set(12, 4, 12);
+            loader = new THREE.GLTFLoader();
+            animate();
+            loadCar();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        function loadCar() {
+            if (!state.ownedCars || state.ownedCars.length === 0) return;
+            const car = state.ownedCars[state.currentCarIndex];
+            if (!car || !car.filename) return;
+
+            if (currentFile === car.filename && currentModel) {
+                updateMaterials();
+                return;
+            }
+
+            if (currentModel) scene.remove(currentModel);
+            currentFile = car.filename;
+
+            try {
+                loader.load(car.filename, (gltf) => {
+                    currentModel = gltf.scene;
+                    const box = new THREE.Box3().setFromObject(currentModel);
+                    currentModel.scale.setScalar(4.5 / Math.max(box.getSize(new THREE.Vector3()).x, 1));
+                    scene.add(currentModel);
+                    updateMaterials();
+                }, undefined, (err) => {
+                    generateFallback();
+                });
+            } catch (err) {
+                generateFallback();
+            }
+
+            document.getElementById('car-name').innerText = car.name;
+        }
+
+        function generateFallback() {
+            if (currentModel) scene.remove(currentModel);
+            const geo = new THREE.BoxGeometry(2.5, 0.45, 1.25);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x1c1917, metalness: 0.9, roughness: 0.1 });
+            currentModel = new THREE.Mesh(geo, mat);
+            scene.add(currentModel);
+        }
+
+        function updateMaterials() {
+            if (!currentModel) return;
+            const finish = state.ownedCars[state.currentCarIndex].finish;
+            currentModel.traverse(n => {
+                if (n.isMesh && n.material) {
+                    if (finish === 'Gold') {
+                        n.material.color.setHex(0xffd700);
+                        n.material.metalness = 1.0;
+                        n.material.roughness = 0.05;
+                    } else if (finish === 'Carbon') {
+                        n.material.color.setHex(0x111111);
+                        n.material.metalness = 0.8;
+                        n.material.roughness = 0.2;
+                    }
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function applyLuxuryFinish(f) {
+            if (state.diamonds >= 100) {
+                state.diamonds -= 100;
+                state.ownedCars[state.currentCarIndex].finish = f;
+                updateMaterials();
+                updateUI();
+                saveGame(); // Save immediately after spending diamonds
+                triggerFloat(f.toUpperCase() + " APPLIED", "#fbbf24");
+            } else {
+                triggerFloat("NEED 100💎", "#ef4444");
+            }
+        }
+
+        function nextCar() {
+            state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length;
+            loadCar();
+            saveGame();
+        }
+        function prevCar() {
+            state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length;
+            loadCar();
+            saveGame();
+        }
+
+        function updateUI() {
+            document.getElementById('vip-money').innerText = formatMoney(state.money);
+            document.getElementById('vip-diamonds').innerText = state.diamonds.toLocaleString();
+        }
+
+        function unlockAudio() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') ctx.resume();
+        }
+
+        window.onload = () => {
+            loadGame(); // Pull global save data FIRST
+            init3D();
+            updateUI();
+        };
+    </script>
+</body>
+</html>
