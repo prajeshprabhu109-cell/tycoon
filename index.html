@@ -170,10 +170,6 @@
                 </div>
                 <h1 id="money-display" class="text-2xl font-black text-white">₹0</h1>
 
-                <button onclick="window.location.href='vip.html'" class="mt-3 w-full py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-300/50 hover:scale-105 transition-transform">
-                    Enter VIP Vault 👑
-                </button>
-
                 <div class="mt-3">
                     <div class="flex justify-between items-end mb-1">
                         <div class="flex items-center gap-2">
@@ -299,6 +295,10 @@
                 </div>
                 <button onclick="nextInventoryCar()" class="text-sm text-slate-400 hover:text-white transition-colors">▶</button>
             </div>
+
+            <button onclick="window.location.href='vip.html'" class="absolute top-8 right-8 z-30 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.5)] border border-amber-300/50 hover:scale-105 transition-transform">
+                VIP Vault 👑
+            </button>
         </div>
 
         <div class="action-column flex flex-col items-center justify-center gap-3 h-full overflow-y-auto no-scrollbar py-2">
@@ -554,15 +554,15 @@
             brandRep: 1, globalMult: 1.0, dailyClaimed: false,
             ownedCars: [], salesLog: [], activeTrend: null,
             inventory: [
-                { name: "MERCEDES CLA", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
-                { name: "BMW 3 SERIES", filename: '3series.glb', buyPrice: 2800000, color: "#1d4ed8", trim: "#111827", engine: 0, isRare: false, baseHP: 255, finish: 'Standard' },
-                { name: "AUDI R8", filename: 'r812.glb', buyPrice: 6500000, color: "#f8fafc", trim: "#111827", engine: 0, isRare: false, baseHP: 430, finish: 'Standard' },
-                { name: "LAMBORGHINI GALLARDO", filename: 'gallardo.glb', buyPrice: 8500000, color: "#eab308", trim: "#111827", engine: 0, isRare: false, baseHP: 520, finish: 'Standard' }
+                { name: "Meister C-Line", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
+                { name: "Bavarian 3-Spec", filename: '3series.glb', buyPrice: 2800000, color: "#1d4ed8", trim: "#111827", engine: 0, isRare: false, baseHP: 255, finish: 'Standard' },
+                { name: "Auris V8", filename: 'r812.glb', buyPrice: 6500000, color: "#f8fafc", trim: "#111827", engine: 0, isRare: false, baseHP: 430, finish: 'Standard' },
+                { name: "Torino Gladiator", filename: 'gallardo.glb', buyPrice: 8500000, color: "#eab308", trim: "#111827", engine: 0, isRare: false, baseHP: 520, finish: 'Standard' }
             ],
             rareCars: [
-                { name: "FERRARI F40", filename: 'f40.glb', baseBid: 45000000, isRare: true, baseHP: 478, finish: 'Standard' },
-                { name: "MCLAREN", filename: 'mclaren_f1.glb', baseBid: 85000000, isRare: true, baseHP: 627, finish: 'Standard' },
-                { name: "KOENIGSEGG JESKO", filename: 'koenigsegg3.glb', baseBid: 120000000, isRare: true, baseHP: 1280, finish: 'Standard' }
+                { name: "Cavallo V40", filename: 'f40.glb', baseBid: 45000000, isRare: true, baseHP: 478, finish: 'Standard' },
+                { name: "MacMillan F-One", filename: 'mclaren_f1.glb', baseBid: 85000000, isRare: true, baseHP: 627, finish: 'Standard' },
+                { name: "Kaiser J-Hyper", filename: 'koenigsegg3.glb', baseBid: 120000000, isRare: true, baseHP: 1280, finish: 'Standard' }
             ],
             branches: [
                 { name: "London Outlet", cost: 5000000, reqRep: 3, owned: false, bonus: 0.25 },
@@ -853,7 +853,7 @@
         function counterOffer() { if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
 
         function updateTrends() {
-            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'MERCEDES CLA', label: 'C-LINE VALUES SPIKING (1.5x Bonus)' }];
+            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Meister C-Line', label: 'C-LINE VALUES SPIKING (1.5x Bonus)' }];
             state.activeTrend = trends[Math.floor(Math.random() * trends.length)];
             const t = document.getElementById('ticker-text'); if(t) t.innerText = `Market Update: ${state.activeTrend.label} ... Opening new Global Branches ... Showroom Prestige increases appraisal value ...`;
             updateUI();
