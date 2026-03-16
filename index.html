@@ -50,6 +50,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: all 0.2s ease; cursor: pointer;
             box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+            user-select: none;
         }
 
         .glass-button:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
@@ -66,7 +67,7 @@
             box-shadow: 0 0 10px #22d3ee; transition: width 1s ease-in-out;
         }
 
-        /* News Ticker - Bottom Positioned */
+        /* News Ticker */
         #news-ticker {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: rgba(0,0,0,0.8); height: 28px; z-index: 500;
@@ -105,6 +106,7 @@
         }
 
         #three-container { width: 100%; height: 100%; position: relative; cursor: grab; }
+        #three-container:active { cursor: grabbing; }
 
         @keyframes float-up {
             0% { opacity: 0; transform: translateY(0); }
@@ -147,11 +149,13 @@
 
         @media (max-width: 768px) {
             #main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; overflow-y: auto; padding-bottom: 120px; }
-            .action-column { flex-direction: row !important; width: 100%; justify-content: center; gap: 0.5rem; height: auto !important; padding: 1rem 0; }
+            .action-column { flex-direction: row !important; width: 100%; justify-content: center; gap: 0.5rem; height: auto !important; padding: 1rem 0; flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
+
+    <audio id="bg-music" src="song.mp3" loop></audio>
 
     <div class="goal-bar"><div id="goal-fill" class="goal-fill" style="width: 5%"></div></div>
 
@@ -227,8 +231,7 @@
 
                     <div id="view-facility" class="hidden space-y-4">
                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Branch Expansion</p>
-                        <div id="branch-list" class="space-y-2">
-                            </div>
+                        <div id="branch-list" class="space-y-2"></div>
                         <div class="h-px bg-white/5 my-2"></div>
                         <button onclick="upgradePrestige()" class="btn-tap w-full py-3 bg-purple-500/10 border border-purple-500/20 rounded-xl flex flex-col items-center">
                             <span class="text-[10px] font-black text-white uppercase">Upgrade Showroom</span>
@@ -265,8 +268,9 @@
                                 <p id="auc-timer" class="text-xs text-red-400 font-bold mt-1">10.0s</p>
                             </div>
                             <button onclick="placeAuctionBid()" id="bid-btn" class="btn-tap w-full py-4 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs rounded-xl shadow-lg uppercase">Place Bid (+₹10L)</button>
+                            <button onclick="exitAuction()" class="btn-tap w-full py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-black text-[10px] rounded-xl border border-red-500/20 uppercase shadow-lg transition-colors">Exit Auction</button>
                         </div>
-                        <button id="auc-entry-btn" onclick="enterAuctionQueue()" class="btn-tap w-full py-4 bg-slate-800 border border-white/10 rounded-xl font-black text-xs text-purple-400 uppercase">Enter Elite Event (₹1L)</button>
+                        <button id="auc-entry-btn" onclick="enterAuctionQueue()" class="btn-tap w-full py-4 bg-slate-800 border border-white/10 rounded-xl font-black text-xs text-purple-400 uppercase hover:bg-slate-700 transition-colors">Enter Elite Event (₹1L)</button>
                     </div>
 
                     <div id="view-sales" class="hidden space-y-2">
@@ -276,8 +280,7 @@
 
                     <div id="view-rank" class="hidden space-y-2">
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Global Leaderboard</p>
-                        <div id="leaderboard-list" class="space-y-2">
-                            </div>
+                        <div id="leaderboard-list" class="space-y-2"></div>
                     </div>
                 </div>
             </div>
@@ -302,6 +305,10 @@
         </div>
 
         <div class="action-column flex flex-col items-center justify-center gap-3 h-full overflow-y-auto no-scrollbar py-2">
+            <button onclick="toggleGarageMode()" id="garage-btn" class="glass-button border-green-500/50">
+                <span class="text-[9px] font-black text-green-400 mb-1 uppercase">Garage</span>
+                <div class="text-[12px]">🏠</div>
+            </button>
             <button onclick="repair()" class="glass-button">
                 <span class="text-[9px] font-black text-cyan-400 mb-1 uppercase">Repair</span>
                 <div class="w-8 h-1.5 bg-cyan-400/20 rounded-full overflow-hidden">
@@ -379,6 +386,19 @@
     </div>
 
     <script>
+        // --- AUDIO AUTOPLAY LOGIC ---
+        let audioStarted = false;
+        document.body.addEventListener('click', () => {
+            if (!audioStarted) {
+                const bgMusic = document.getElementById('bg-music');
+                if (bgMusic) {
+                    bgMusic.volume = 0.4;
+                    bgMusic.play().catch(e => console.log("Audio play blocked by browser."));
+                    audioStarted = true;
+                }
+            }
+        }, { once: true });
+
         // --- HOISTED GLOBAL UTILITIES ---
         function formatMoney(n) { return "₹" + Math.floor(n).toLocaleString('en-IN'); }
 
@@ -393,7 +413,13 @@
         // --- 3D RENDER ENGINE ---
         let scene, camera, renderer, currentModel, loader, controls;
         let driveShake = 0, isInterior = false, currentActiveFile = "";
-        let ambLight, sunLight, rimLight, neonL, neonR, exhaustFlame;
+        let ambLight, sunLight, rimLight, exhaustFlame;
+
+        // Garage Specific Variables
+        let garageModelGlobal = null;
+        let raycaster, mouse;
+        let isDraggingCar = false;
+        let dragPlane;
 
         function init3D() {
             const container = document.getElementById('three-container');
@@ -411,7 +437,7 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.minDistance = 3; controls.maxDistance = 12;
+            controls.minDistance = 3; controls.maxDistance = 15;
             controls.enablePan = false;
 
             ambLight = new THREE.AmbientLight(0xffffff, 0.9); scene.add(ambLight);
@@ -420,12 +446,115 @@
 
             camera.position.set(6, 2.5, 6); camera.lookAt(0, 0, 0);
             loader = new THREE.GLTFLoader();
+
+            // Load the Garage (Initially Hidden)
+            loader.load('garage.glb', (gltf) => {
+                garageModelGlobal = gltf.scene;
+                garageModelGlobal.scale.setScalar(5.0);
+                garageModelGlobal.position.set(0, -0.4, 0);
+                garageModelGlobal.visible = false; // Hidden by default
+                scene.add(garageModelGlobal);
+            }, undefined, (err) => {
+                console.log("Garage model not found yet.");
+            });
+
+            // Set up Drag-and-Drop system for Garage Mode
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Invisible floor plane to drag cars across
+            dragPlane = new THREE.Mesh(
+                new THREE.PlaneGeometry(200, 200),
+                new THREE.MeshBasicMaterial({visible: false})
+            );
+            dragPlane.rotation.x = -Math.PI / 2;
+            dragPlane.position.y = -0.4; // Matches the garage floor height. If your cars still float, lower this number!
+            scene.add(dragPlane);
+
+            container.addEventListener('pointerdown', (e) => {
+                if (!state.isGarageMode || !currentModel) return;
+                const rect = container.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+
+                const intersects = raycaster.intersectObject(currentModel, true);
+                if (intersects.length > 0) {
+                    isDraggingCar = true;
+                    controls.enabled = false; // Stop the camera from spinning while dragging
+                }
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!isDraggingCar) return;
+                const rect = container.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+
+                const intersects = raycaster.intersectObject(dragPlane);
+                if (intersects.length > 0) {
+                    currentModel.position.x = intersects[0].point.x;
+                    currentModel.position.z = intersects[0].point.z;
+                }
+            });
+
+            container.addEventListener('pointerup', () => {
+                if (isDraggingCar) {
+                    isDraggingCar = false;
+                    controls.enabled = true;
+
+                    // Save the custom parked position!
+                    if (state.currentCarIndex !== -1) {
+                        state.ownedCars[state.currentCarIndex].garageX = currentModel.position.x;
+                        state.ownedCars[state.currentCarIndex].garageZ = currentModel.position.z;
+                        saveGame();
+                    }
+                }
+            });
+
             window.addEventListener('resize', () => {
                 camera.aspect = container.clientWidth / container.clientHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(container.clientWidth, container.clientHeight);
             });
             animate();
+        }
+
+        function toggleGarageMode() {
+            state.isGarageMode = !state.isGarageMode;
+            const bg = document.getElementById('garage-gradient');
+            const btn = document.getElementById('garage-btn');
+
+            if (state.isGarageMode) {
+                if(bg) bg.style.display = 'none';
+                if(garageModelGlobal) garageModelGlobal.visible = true;
+
+                camera.position.set(12, 5, 12); // Zoom out
+                btn.style.borderColor = 'rgba(34, 197, 94, 1)';
+                btn.style.boxShadow = '0 0 15px rgba(34, 197, 94, 0.5)';
+                triggerFloat("GARAGE VIEW", "#22c55e");
+
+                // Snap car to saved position and floor height
+                if (state.currentCarIndex !== -1 && currentModel) {
+                    const car = state.ownedCars[state.currentCarIndex];
+                    currentModel.position.x = car.garageX || 0;
+                    currentModel.position.y = -0.4;
+                    currentModel.position.z = car.garageZ || 0;
+                }
+            } else {
+                if(bg) bg.style.display = 'block';
+                if(garageModelGlobal) garageModelGlobal.visible = false;
+
+                camera.position.set(6, 2.5, 6); // Zoom back into Studio
+                btn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+                btn.style.boxShadow = 'none';
+                triggerFloat("STUDIO VIEW", "#38bdf8");
+
+                // Snap car back to center
+                if (currentModel) currentModel.position.set(0, 0, 0);
+            }
+            saveGame();
         }
 
         function generateDetailedCar(key, color, shine, trim) {
@@ -457,6 +586,15 @@
                         const box = new THREE.Box3().setFromObject(currentModel);
                         const targetScale = (carKey === 'koenigsegg' || carKey === 'f40' || carKey === 'koenigsegg3' || carKey === 'gallardo') ? 4.0 : 3.5;
                         currentModel.scale.setScalar(targetScale / Math.max(box.getSize(new THREE.Vector3()).x, 1));
+
+                        // Ensure it stays at correct position based on mode
+                        if(state.isGarageMode && state.currentCarIndex !== -1) {
+                            const car = state.ownedCars[state.currentCarIndex];
+                            currentModel.position.set(car.garageX || 0, -0.4, car.garageZ || 0);
+                        } else {
+                            currentModel.position.set(0,0,0);
+                        }
+
                         updateMaterials(color, shine, trim, isRare);
                         scene.add(currentModel);
                     });
@@ -500,7 +638,6 @@
                         n.material.color?.set(color);
                         n.material.map = null;
 
-                        // Handle Finishes
                         if (finish === 'Matte') {
                             n.material.metalness = 0.0;
                             n.material.roughness = 0.9;
@@ -530,19 +667,22 @@
         function animate() {
             requestAnimationFrame(animate);
             if (controls) controls.update();
+
             if (currentModel) {
                 if (isInterior) {
                     camera.position.lerp(new THREE.Vector3(0.1, 0.5, 0.2), 0.08);
                     camera.lookAt(0.8, 0.3, 0);
                     currentModel.rotation.y = 0;
                     if (controls) controls.enabled = false;
-                } else {
+                } else if (!isDraggingCar) {
                     if (controls) controls.enabled = !state.testDrive.active;
                 }
+
+                // Handle Test Drive Shake
                 if (driveShake > 0) {
                     currentModel.position.set((Math.random()-0.5)*driveShake, (Math.random()-0.5)*driveShake, 0);
-                } else {
-                    currentModel.position.set(0, 0, 0);
+                } else if (!state.isGarageMode && !isDraggingCar) {
+                    currentModel.position.set(0, 0, 0); // Lock to center in Studio Mode
                 }
             }
             if (renderer && scene && camera) renderer.render(scene, camera);
@@ -551,7 +691,7 @@
         // --- TYCOON LOGIC & SAVE SYSTEM ---
         const defaultState = {
             money: 1500000, diamonds: 25, condition: 0, detailingLevel: 0, currentCarIndex: -1, staffCount: 0, prestige: 1, hype: 1.0, slots: 1,
-            brandRep: 1, globalMult: 1.0, dailyClaimed: false,
+            brandRep: 1, globalMult: 1.0, dailyClaimed: false, isGarageMode: false,
             ownedCars: [], salesLog: [], activeTrend: null,
             inventory: [
                 { name: "Meister C-Line", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
@@ -582,12 +722,13 @@
         try {
             const savedState = localStorage.getItem('aevith_tycoon_save');
             state = savedState ? JSON.parse(savedState) : defaultState;
+            // Force Garage mode off on reload so it doesn't break
+            state.isGarageMode = false;
         } catch (e) {
             state = defaultState;
         }
 
         function saveGame() {
-            // Remove active intervals from state before saving to prevent JSON errors
             const stateToSave = {
                 ...state,
                 testDrive: { ...state.testDrive, interval: null },
@@ -746,7 +887,8 @@
             const car = state.inventory.find(c => c.name === name);
             if (state.money >= car.buyPrice) {
                 state.money -= car.buyPrice;
-                state.ownedCars.push({...car, condition: 30, engine: 0, trim: "#111827", isRare: false, finish: 'Standard'});
+                // Add default garage coordinates so it doesn't break
+                state.ownedCars.push({...car, condition: 30, engine: 0, trim: "#111827", isRare: false, finish: 'Standard', garageX: 0, garageZ: 0});
                 state.currentCarIndex = state.ownedCars.length - 1; state.condition = 30; updateUI();
             } else { triggerFloat("NEED MORE ₹", "#ef4444"); }
         }
@@ -819,7 +961,7 @@
                     clearInterval(state.auction.interval);
                     if (state.auction.highBidder === "YOU") {
                         state.money -= state.auction.currentBid;
-                        state.ownedCars.push({...state.auction.car, buyPrice: state.auction.currentBid, condition: 40, engine: 1, rim: 'stock', spoiler: true, trim: "#991b1b", finish: 'Standard'});
+                        state.ownedCars.push({...state.auction.car, buyPrice: state.auction.currentBid, condition: 40, engine: 1, rim: 'stock', spoiler: true, trim: "#991b1b", finish: 'Standard', garageX: 0, garageZ: 0});
                         state.currentCarIndex = state.ownedCars.length - 1; state.condition = 40; triggerFloat("WON AUCTION!", "#a855f7");
                     } else { triggerFloat("LOST AUCTION", "#ef4444"); }
                     state.auction.active = false; updateUI();
@@ -829,6 +971,13 @@
         }
 
         function placeAuctionBid() { if (state.money >= state.auction.currentBid + 1000000) { state.auction.currentBid += 1000000; state.auction.highBidder = "YOU"; state.auction.timer = Math.min(10, state.auction.timer + 2); } }
+
+        function exitAuction() {
+            if (state.auction.interval) clearInterval(state.auction.interval);
+            state.auction.active = false;
+            triggerFloat("AUCTION CANCELLED", "#ef4444");
+            updateUI();
+        }
 
         function acceptOffer() {
             if (state.currentCustomer) {
@@ -876,7 +1025,7 @@
             init3D();
             if (state.ownedCars.length === 0 && state.inventory[0]) {
                 state.money -= state.inventory[0].buyPrice;
-                state.ownedCars.push({...state.inventory[0], condition: 65, engine: 0, rim: 'stock', spoiler: false, trim: "#7c2d12", isRare: false, finish: 'Standard'});
+                state.ownedCars.push({...state.inventory[0], condition: 65, engine: 0, rim: 'stock', spoiler: false, trim: "#7c2d12", isRare: false, finish: 'Standard', garageX: 0, garageZ: 0});
                 state.currentCarIndex = 0; state.condition = 65;
             } else if (state.ownedCars.length > 0) {
                 state.currentCarIndex = 0;
