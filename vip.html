@@ -24,7 +24,10 @@
         }
 
         .gold-gradient {
-            background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);
+            /* NEW: Image Background with a dark tint so the UI remains readable */
+            background: linear-gradient(rgba(10, 5, 0, 0.6), rgba(0, 0, 0, 0.9)), url('https://cdn.sanity.io/images/j29qhhdl/production/f83979ebc93090c5d200918ee8c027c1659c61dd-1280x719.jpg');
+            background-size: cover;
+            background-position: center;
             position: absolute;
             inset: 0;
             z-index: 0;
@@ -100,6 +103,8 @@
 </head>
 <body onclick="unlockAudio()">
 
+    <audio id="bg-music" src="song2.mp3" loop></audio>
+
     <div class="gold-gradient"></div>
 
     <div class="flex h-full relative z-10">
@@ -159,6 +164,19 @@
     </div>
 
     <script>
+        // --- AUDIO AUTOPLAY LOGIC ---
+        let audioStarted = false;
+        document.body.addEventListener('click', () => {
+            if (!audioStarted) {
+                const bgMusic = document.getElementById('bg-music');
+                if (bgMusic) {
+                    bgMusic.volume = 0.4;
+                    bgMusic.play().catch(e => console.log("Audio play blocked by browser."));
+                    audioStarted = true;
+                }
+            }
+        }, { once: true });
+
         // --- GLOBAL SAVE SYSTEM INTEGRATION ---
         let state = {};
 
@@ -168,25 +186,28 @@
                 if (savedState) {
                     state = JSON.parse(savedState);
                 } else {
-                    // Fallback if they somehow reached VIP without playing main game
                     state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
                 }
             } catch (e) {
                 state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
             }
 
-            // Ensure they have the VIP exclusive cars in their garage
+            // --- NEW CARS ADDED HERE ---
             const vipCars = [
                 { name: "Bouvetti Centurion", filename: "bug.glb", finish: "Standard", buyPrice: 50000000 },
                 { name: "Pegasus Zephyr", filename: "pag.glb", finish: "Standard", buyPrice: 40000000 },
                 { name: "Torino Rebelto", filename: "lamrev.glb", finish: "Standard", buyPrice: 35000000 },
                 { name: "Stuttgart 99-GT", filename: "por.glb", finish: "Standard", buyPrice: 25000000 },
                 { name: "Ashton Vanguard", filename: "aston.glb", finish: "Standard", buyPrice: 45000000 },
-                { name: "Meister C-Line", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
-
+                { name: "Chevromet Corlet", filename: 'chev.glb', buyPrice: 1200000, finish: 'Standard' },
+                { name: "Tissan 350Z", filename: "tissan.glb", finish: "Standard", buyPrice: 4500000 },
+                { name: "Topta Supra", filename: "topta.glb", finish: "Standard", buyPrice: 8500000 },
+                { name: "Kitubshi Eclipse", filename: "kit.glb", finish: "Standard", buyPrice: 3200000 },
+                { name: "Chinside Maxda", filename: "chin.glb", finish: "Standard", buyPrice: 2900000 },
+                { name: "Maxda 1993", filename: "max.glb", finish: "Standard", buyPrice: 5000000 },
+                { name: "Vigilante Night-Rider", filename: "bat1.glb", finish: "Standard", buyPrice: 25000000 }
             ];
 
-            // Add VIP cars to garage if they don't already own them
             vipCars.forEach(vipCar => {
                 if (!state.ownedCars.some(car => car.name === vipCar.name)) {
                     state.ownedCars.push(vipCar);
@@ -199,7 +220,6 @@
         }
 
         function saveGame() {
-            // Clean up intervals before saving
             const stateToSave = {
                 ...state,
                 testDrive: state.testDrive ? { ...state.testDrive, interval: null } : {},
@@ -268,7 +288,6 @@
         }
 
         function loadCar() {
-            if (!state.ownedCars || state.ownedCars.length === 0) return;
             const car = state.ownedCars[state.currentCarIndex];
             if (!car || !car.filename) return;
 
@@ -333,25 +352,16 @@
             if (state.diamonds >= 100) {
                 state.diamonds -= 100;
                 state.ownedCars[state.currentCarIndex].finish = f;
-                updateMaterials();
-                updateUI();
-                saveGame(); // Save immediately after spending diamonds
+                updateMaterials(); updateUI();
+                saveGame();
                 triggerFloat(f.toUpperCase() + " APPLIED", "#fbbf24");
             } else {
                 triggerFloat("NEED 100💎", "#ef4444");
             }
         }
 
-        function nextCar() {
-            state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length;
-            loadCar();
-            saveGame();
-        }
-        function prevCar() {
-            state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length;
-            loadCar();
-            saveGame();
-        }
+        function nextCar() { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; loadCar(); saveGame(); }
+        function prevCar() { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; loadCar(); saveGame(); }
 
         function updateUI() {
             document.getElementById('vip-money').innerText = formatMoney(state.money);
@@ -363,11 +373,7 @@
             if (ctx.state === 'suspended') ctx.resume();
         }
 
-        window.onload = () => {
-            loadGame(); // Pull global save data FIRST
-            init3D();
-            updateUI();
-        };
+        window.onload = () => { loadGame(); init3D(); updateUI(); };
     </script>
 </body>
 </html>
