@@ -97,10 +97,11 @@
         }
         .tab-btn.active { background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); color: white; }
 
+        /* THE FIX: Changed height to strictly subtract the ticker height and removed overlapping bottom padding */
         #main-container {
             flex: 1; display: grid; grid-template-columns: 280px 1fr 80px;
             gap: 1rem; padding: 1rem; position: relative; z-index: 5;
-            height: calc(100vh - 140px); min-height: 0;
+            height: calc(100vh - 30px); min-height: 0; box-sizing: border-box;
         }
 
         #three-container { width: 100%; height: 100%; position: relative; cursor: grab; }
@@ -116,7 +117,6 @@
             pointer-events: none; animation: float-up 1.5s ease-out forwards; z-index: 200; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
         }
 
-        /* NEW: SATISFYING CASH POP PARTICLES */
         @keyframes popUpFade {
             0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
             50% { transform: translate(-50%, -40px) scale(1.2); }
@@ -128,7 +128,6 @@
             pointer-events: none; z-index: 9999; animation: popUpFade 1.2s ease-out forwards;
         }
 
-        /* NEW: INTERACTIVE TUTORIAL PULSE */
         @keyframes pulse-ring {
             0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
             100% { box-shadow: 0 0 0 15px rgba(34, 211, 238, 0); }
@@ -167,7 +166,6 @@
             background: white; box-shadow: 0 0 10px white; left: 0;
         }
 
-        /* Idle Earnings Popup */
         #idle-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 4000;
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -248,8 +246,8 @@
                     <div id="view-staff" class="space-y-4">
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Showroom Management</p>
                         <button onclick="hireMechanic()" class="btn-tap w-full py-4 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center justify-center">
-                            <span class="text-xs font-black text-white uppercase">Hire Master Mechanic</span>
-                            <span id="hire-cost" class="text-[10px] text-slate-400 font-bold mt-1">₹5,00,000</span>
+                            <span class="text-xs font-black text-white uppercase">Hire Mechanic</span>
+                            <span id="hire-cost" class="text-[10px] text-slate-400 font-bold mt-1">₹5,00,000 (Auto Earn)</span>
                         </button>
                         <div class="p-3 bg-cyan-500/5 border border-cyan-500/10 rounded-xl">
                             <p class="text-[9px] text-cyan-400 font-bold uppercase mb-1">Watch Ad For Bonus</p>
@@ -315,7 +313,7 @@
         </div>
 
         <div class="relative h-full overflow-hidden flex flex-col">
-            <div id="three-container" class="flex-1"></div>
+            <div id="three-container" class="flex-1 min-h-0"></div>
             <div id="float-container" class="absolute inset-0 pointer-events-none"></div>
 
             <div class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur px-4 py-2 rounded-full border border-white/10 z-20 shadow-2xl">
@@ -331,13 +329,13 @@
                 VIP Vault 👑
             </button>
 
-            <div class="p-4 relative z-10 bg-gradient-to-t from-black to-transparent">
+            <div class="pt-4 px-4 pb-8 relative z-10 bg-gradient-to-t from-black to-transparent">
                 <p id="market-tutorial-text" class="text-[10px] text-cyan-400 font-black uppercase mb-2 text-center hidden animate-pulse">👇 Buy your first car to start! 👇</p>
                 <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-2"></div>
             </div>
         </div>
 
-        <div class="action-column flex flex-col items-center justify-center gap-3 h-full overflow-y-auto no-scrollbar py-2">
+        <div class="action-column flex flex-col items-center justify-start pt-12 pb-20 gap-3 h-full overflow-y-auto no-scrollbar">
             <button onclick="toggleGarageMode()" id="garage-btn" class="glass-button border-green-500/50">
                 <span class="text-[9px] font-black text-green-400 mb-1 uppercase">Garage</span>
                 <div class="text-[12px]">🏠</div>
@@ -368,7 +366,6 @@
                 <span class="text-[8px] font-black text-slate-300 mb-1 uppercase">Photo</span>
                 <div class="text-[12px]">📸</div>
             </button>
-            <div id="offer-indicator" class="w-3 h-3 rounded-full bg-slate-800 transition-colors shadow-inner flex-shrink-0"></div>
         </div>
     </div>
 
@@ -1186,7 +1183,9 @@
 
                 if (salePrice > 5000000) state.brandRep++;
                 state.ownedCars.splice(state.currentCarIndex, 1);
-                state.currentCarIndex = Math.max(0, state.ownedCars.length - 1);
+
+                state.currentCarIndex = state.ownedCars.length > 0 ? state.ownedCars.length - 1 : -1;
+
                 state.condition = state.currentCarIndex !== -1 ? state.ownedCars[state.currentCarIndex].condition : 0;
                 state.currentCustomer = null; updateUI();
             }
@@ -1221,9 +1220,7 @@
             init3D();
             updateTrends();
             updateUI();
-
             setInterval(updateTrends, 60000);
-
             setInterval(() => {
                 if (state.staffCount > 0 && state.currentCarIndex !== -1 && state.condition < 100) {
                     state.condition = Math.min(100, state.condition + (state.staffCount * 0.5));
@@ -1233,17 +1230,6 @@
                 state.hype = Math.max(1.0, state.hype - 0.005);
                 checkArrival();
             }, 3000);
-
-            // 10-Second Idle Auto-Income loop
-            setInterval(() => {
-                if (state.staffCount > 0) {
-                    const passiveEarn = state.staffCount * 15000;
-                    state.money += passiveEarn;
-                    spawnCashPop(passiveEarn);
-                    sfxCash();
-                    updateUI();
-                }
-            }, 10000);
         };
     </script>
 </body>
