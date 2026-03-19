@@ -8,6 +8,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
+
+    <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
 
@@ -31,9 +34,6 @@
             transition: background 1s ease;
         }
 
-        .garage-bg.midnight { background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%); }
-        .garage-bg.prestige { background: radial-gradient(circle at 50% 50%, #1e293b 0%, #000000 100%); }
-
         .glass-panel {
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(20px);
@@ -52,7 +52,6 @@
             box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
             user-select: none;
         }
-
         .glass-button:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -67,7 +66,6 @@
             box-shadow: 0 0 10px #22d3ee; transition: width 1s ease-in-out;
         }
 
-        /* News Ticker */
         #news-ticker {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: rgba(0,0,0,0.8); height: 28px; z-index: 500;
@@ -145,8 +143,14 @@
             background: white; box-shadow: 0 0 10px white; left: 0;
         }
 
-        @media (max-width: 1024px) { #main-container { grid-template-columns: 240px 1fr 75px; } }
+        /* Idle Earnings Popup */
+        #idle-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 4000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px);
+        }
 
+        @media (max-width: 1024px) { #main-container { grid-template-columns: 240px 1fr 75px; } }
         @media (max-width: 768px) {
             #main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; overflow-y: auto; padding-bottom: 120px; }
             .action-column { flex-direction: row !important; width: 100%; justify-content: center; gap: 0.5rem; height: auto !important; padding: 1rem 0; flex-wrap: wrap; }
@@ -224,8 +228,8 @@
                             <span id="hire-cost" class="text-[10px] text-slate-400 font-bold mt-1">₹5,00,000</span>
                         </button>
                         <div class="p-3 bg-cyan-500/5 border border-cyan-500/10 rounded-xl">
-                            <p class="text-[9px] text-cyan-400 font-bold uppercase mb-1">Daily Reward</p>
-                            <button onclick="claimDaily()" id="daily-claim-btn" class="w-full py-2 bg-cyan-500 text-white text-[10px] font-black uppercase rounded-lg shadow-lg">Claim Bonus Reward</button>
+                            <p class="text-[9px] text-cyan-400 font-bold uppercase mb-1">Watch Ad For Bonus</p>
+                            <button onclick="claimDaily()" id="daily-claim-btn" class="w-full py-2 bg-cyan-500 text-white text-[10px] font-black uppercase rounded-lg shadow-lg">Get Reward (Ad)</button>
                         </div>
                     </div>
 
@@ -341,7 +345,7 @@
 
     <div id="news-ticker">
         <div id="ticker-text" class="ticker-content">
-            Market Update: Cavallo V40 available for Elite Auction!... Auris V8 interior craftsmanship praised by critics... Torino branding visible from every angle... Billionaire tech genius spotted buying hypercars...
+            Market Update: Billionaire vigilante spotted buying custom hypercars... Cavallo Evo interior craftsmanship praised by critics... Aggressive Triton branding visible from every angle...
         </div>
     </div>
 
@@ -385,9 +389,32 @@
         <button onclick="performShift()" class="mt-12 px-12 py-6 bg-orange-500 text-white font-black rounded-2xl shadow-2xl shadow-orange-500/40 uppercase tracking-widest text-xl active:scale-95 transition-transform">SHIFT NOW!</button>
     </div>
 
+    <div id="idle-modal">
+        <div class="glass-panel p-8 text-center max-w-sm w-11/12 border-cyan-500/30">
+            <h2 class="text-2xl font-black text-white uppercase italic mb-2">Welcome Back Boss</h2>
+            <p class="text-sm text-slate-300 mb-6">Your master mechanics kept the showroom running while you were gone.</p>
+            <div class="bg-black/50 p-4 rounded-xl border border-white/10 mb-6">
+                <p class="text-[10px] text-cyan-400 font-bold uppercase mb-1">Offline Profits</p>
+                <p id="idle-profit-text" class="text-3xl font-black text-green-400">₹0</p>
+            </div>
+            <button onclick="document.getElementById('idle-modal').style.display='none'" class="w-full py-4 bg-cyan-500 text-white font-black uppercase rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.4)]">Collect Cash</button>
+        </div>
+    </div>
+
     <script>
-        // --- AUDIO AUTOPLAY LOGIC ---
+        // --- POKI SDK INIT & AUDIO AUTOPLAY ---
         let audioStarted = false;
+
+        // Initialize Poki SDK early as requested by their guidelines
+        if (typeof PokiSDK !== 'undefined') {
+            PokiSDK.init().then(() => {
+                console.log("Poki SDK successfully initialized");
+                PokiSDK.gameLoadingStart(); // Tell Poki we are loading
+            }).catch(() => {
+                console.log("Initialized, but adblock is likely enabled.");
+            });
+        }
+
         document.body.addEventListener('click', () => {
             if (!audioStarted) {
                 const bgMusic = document.getElementById('bg-music');
@@ -398,6 +425,13 @@
                 }
             }
         }, { once: true });
+
+        // --- NEW: HAPTIC FEEDBACK FUNCTION ---
+        function triggerHaptic(duration = 30) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
 
         // --- HOISTED GLOBAL UTILITIES ---
         function formatMoney(n) { return "₹" + Math.floor(n).toLocaleString('en-IN'); }
@@ -415,7 +449,6 @@
         let driveShake = 0, isInterior = false, currentActiveFile = "";
         let ambLight, sunLight, rimLight, exhaustFlame;
 
-        // Garage Specific Variables
         let garageModelGlobal = null;
         let raycaster, mouse;
         let isDraggingCar = false;
@@ -447,28 +480,30 @@
             camera.position.set(6, 2.5, 6); camera.lookAt(0, 0, 0);
             loader = new THREE.GLTFLoader();
 
-            // Load the Garage (Initially Hidden)
             loader.load('garage.glb', (gltf) => {
                 garageModelGlobal = gltf.scene;
                 garageModelGlobal.scale.setScalar(5.0);
                 garageModelGlobal.position.set(0, -0.4, 0);
-                garageModelGlobal.visible = false; // Hidden by default
+                garageModelGlobal.visible = false;
                 scene.add(garageModelGlobal);
+
+                // Notify Poki that the heavy 3D assets are done loading
+                if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
+
             }, undefined, (err) => {
                 console.log("Garage model not found yet.");
+                if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished(); // Fail-safe
             });
 
-            // Set up Drag-and-Drop system for Garage Mode
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
-            // Invisible floor plane to drag cars across
             dragPlane = new THREE.Mesh(
                 new THREE.PlaneGeometry(200, 200),
                 new THREE.MeshBasicMaterial({visible: false})
             );
             dragPlane.rotation.x = -Math.PI / 2;
-            dragPlane.position.y = -0.4; // Matches the garage floor height. If your cars still float, lower this number!
+            dragPlane.position.y = -0.4;
             scene.add(dragPlane);
 
             container.addEventListener('pointerdown', (e) => {
@@ -481,7 +516,7 @@
                 const intersects = raycaster.intersectObject(currentModel, true);
                 if (intersects.length > 0) {
                     isDraggingCar = true;
-                    controls.enabled = false; // Stop the camera from spinning while dragging
+                    controls.enabled = false;
                 }
             });
 
@@ -503,8 +538,8 @@
                 if (isDraggingCar) {
                     isDraggingCar = false;
                     controls.enabled = true;
+                    triggerHaptic(20); // Snap feel
 
-                    // Save the custom parked position!
                     if (state.currentCarIndex !== -1) {
                         state.ownedCars[state.currentCarIndex].garageX = currentModel.position.x;
                         state.ownedCars[state.currentCarIndex].garageZ = currentModel.position.z;
@@ -522,6 +557,7 @@
         }
 
         function toggleGarageMode() {
+            triggerHaptic(50);
             state.isGarageMode = !state.isGarageMode;
             const bg = document.getElementById('garage-gradient');
             const btn = document.getElementById('garage-btn');
@@ -530,12 +566,11 @@
                 if(bg) bg.style.display = 'none';
                 if(garageModelGlobal) garageModelGlobal.visible = true;
 
-                camera.position.set(12, 5, 12); // Zoom out
+                camera.position.set(12, 5, 12);
                 btn.style.borderColor = 'rgba(34, 197, 94, 1)';
                 btn.style.boxShadow = '0 0 15px rgba(34, 197, 94, 0.5)';
                 triggerFloat("GARAGE VIEW", "#22c55e");
 
-                // Snap car to saved position and floor height
                 if (state.currentCarIndex !== -1 && currentModel) {
                     const car = state.ownedCars[state.currentCarIndex];
                     currentModel.position.x = car.garageX || 0;
@@ -546,12 +581,11 @@
                 if(bg) bg.style.display = 'block';
                 if(garageModelGlobal) garageModelGlobal.visible = false;
 
-                camera.position.set(6, 2.5, 6); // Zoom back into Studio
+                camera.position.set(6, 2.5, 6);
                 btn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
                 btn.style.boxShadow = 'none';
                 triggerFloat("STUDIO VIEW", "#38bdf8");
 
-                // Snap car back to center
                 if (currentModel) currentModel.position.set(0, 0, 0);
             }
             saveGame();
@@ -587,7 +621,6 @@
                         const targetScale = (carKey === 'koenigsegg' || carKey === 'f40' || carKey === 'koenigsegg3' || carKey === 'gallardo') ? 4.0 : 3.5;
                         currentModel.scale.setScalar(targetScale / Math.max(box.getSize(new THREE.Vector3()).x, 1));
 
-                        // Ensure it stays at correct position based on mode
                         if(state.isGarageMode && state.currentCarIndex !== -1) {
                             const car = state.ownedCars[state.currentCarIndex];
                             currentModel.position.set(car.garageX || 0, -0.4, car.garageZ || 0);
@@ -678,11 +711,10 @@
                     if (controls) controls.enabled = !state.testDrive.active;
                 }
 
-                // Handle Test Drive Shake
                 if (driveShake > 0) {
                     currentModel.position.set((Math.random()-0.5)*driveShake, (Math.random()-0.5)*driveShake, 0);
                 } else if (!state.isGarageMode && !isDraggingCar) {
-                    currentModel.position.set(0, 0, 0); // Lock to center in Studio Mode
+                    currentModel.position.set(0, 0, 0);
                 }
             }
             if (renderer && scene && camera) renderer.render(scene, camera);
@@ -691,7 +723,7 @@
         // --- TYCOON LOGIC & SAVE SYSTEM ---
         const defaultState = {
             money: 1500000, diamonds: 25, condition: 0, detailingLevel: 0, currentCarIndex: -1, staffCount: 0, prestige: 1, hype: 1.0, slots: 1,
-            brandRep: 1, globalMult: 1.0, dailyClaimed: false, isGarageMode: false,
+            brandRep: 1, globalMult: 1.0, dailyClaimed: false, isGarageMode: false, lastSavedTime: null,
             ownedCars: [], salesLog: [], activeTrend: null,
             inventory: [
                 { name: "Meister C-Line", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
@@ -719,22 +751,49 @@
         };
 
         let state;
-        try {
-            const savedState = localStorage.getItem('aevith_tycoon_save');
-            state = savedState ? JSON.parse(savedState) : defaultState;
-            // Force Garage mode off on reload so it doesn't break
-            state.isGarageMode = false;
-        } catch (e) {
-            state = defaultState;
+        function loadGameData() {
+            try {
+                const savedState = localStorage.getItem('aevith_tycoon_save_v2');
+                state = savedState ? JSON.parse(savedState) : defaultState;
+                state.isGarageMode = false;
+
+                // IDLE OFFLINE PROGRESSION LOGIC
+                if (state.lastSavedTime && state.staffCount > 0) {
+                    const now = Date.now();
+                    const hoursGone = (now - state.lastSavedTime) / (1000 * 60 * 60);
+
+                    // If gone for more than 5 minutes
+                    if (hoursGone > 0.08) {
+                        // Staff makes 1 Lakh per hour per staff member, capped at 24 hours
+                        const cappedHours = Math.min(hoursGone, 24);
+                        const idleProfits = Math.floor(cappedHours * state.staffCount * 100000 * state.globalMult);
+                        if (idleProfits > 0) {
+                            state.money += idleProfits;
+                            document.getElementById('idle-profit-text').innerText = formatMoney(idleProfits);
+                            document.getElementById('idle-modal').style.display = 'flex';
+                            triggerHaptic(100);
+                        }
+                    }
+                }
+
+                // Show tutorial for brand new players
+                if (!savedState) {
+                    setTimeout(() => triggerFloat("TUTORIAL: Buy cars below to start!", "#a855f7"), 2000);
+                }
+
+            } catch (e) {
+                state = defaultState;
+            }
         }
 
         function saveGame() {
+            state.lastSavedTime = Date.now();
             const stateToSave = {
                 ...state,
                 testDrive: { ...state.testDrive, interval: null },
                 auction: { ...state.auction, interval: null }
             };
-            localStorage.setItem('aevith_tycoon_save', JSON.stringify(stateToSave));
+            localStorage.setItem('aevith_tycoon_save_v2', JSON.stringify(stateToSave));
         }
 
         // --- UI RENDER FUNCTIONS ---
@@ -791,20 +850,6 @@
             if(get('inv-count-display')) get('inv-count-display').innerText = `${state.ownedCars.length}/${state.slots}`;
             if(get('prestige-cost-text')) get('prestige-cost-text').innerText = formatMoney(state.prestige * 2500000);
 
-            // Daily Reward Button Limit Logic
-            const dailyBtn = get('daily-claim-btn');
-            if(dailyBtn) {
-                if(state.dailyClaimed) {
-                    dailyBtn.disabled = true;
-                    dailyBtn.style.opacity = 0.5;
-                    dailyBtn.innerText = "CLAIMED FOR TODAY";
-                } else {
-                    dailyBtn.disabled = false;
-                    dailyBtn.style.opacity = 1;
-                    dailyBtn.innerText = "Claim Bonus Reward";
-                }
-            }
-
             const car = state.auction.active ? state.auction.car : state.ownedCars[state.currentCarIndex];
             if (car) {
                 if(get('car-name-display')) get('car-name-display').innerText = car.name;
@@ -812,7 +857,6 @@
                 if(get('progress-bar')) get('progress-bar').style.width = state.condition + "%";
                 if(get('repair-tiny-bar')) get('repair-tiny-bar').style.width = state.condition + "%";
 
-                // Update Specs
                 const currentHP = car.baseHP + (car.engine * 150);
                 const currentSpeed = Math.floor(200 + (car.engine * 50) + (currentHP / 10));
                 if(get('hp-display')) get('hp-display').innerText = currentHP + " HP";
@@ -862,10 +906,11 @@
                 if(ind) ind.className = 'w-3 h-3 rounded-full bg-slate-800';
             }
             renderMarket(); renderSales(); renderLeaderboard(); renderBranches();
-            saveGame(); // Save progress automatically after every UI update
+            saveGame();
         }
 
         function buyBranch(i) {
+            triggerHaptic(20);
             const b = state.branches[i];
             if (state.money >= b.cost && state.brandRep >= b.reqRep && !b.owned) {
                 state.money -= b.cost; b.owned = true; state.globalMult += b.bonus;
@@ -874,6 +919,7 @@
         }
 
         function setTab(tab) {
+            triggerHaptic(10);
             state.activeTab = tab;
             ['staff', 'facility', 'studio', 'auction', 'sales', 'rank'].forEach(t => {
                 const el = document.getElementById(`view-${t}`); if(el) el.classList.toggle('hidden', t !== tab);
@@ -883,49 +929,66 @@
         }
 
         function buyCar(name) {
+            triggerHaptic(20);
             if(state.ownedCars.length >= state.slots) { triggerFloat("GARAGE FULL!", "#ef4444"); return; }
             const car = state.inventory.find(c => c.name === name);
             if (state.money >= car.buyPrice) {
                 state.money -= car.buyPrice;
-                // Add default garage coordinates so it doesn't break
                 state.ownedCars.push({...car, condition: 30, engine: 0, trim: "#111827", isRare: false, finish: 'Standard', garageX: 0, garageZ: 0});
                 state.currentCarIndex = state.ownedCars.length - 1; state.condition = 30; updateUI();
             } else { triggerFloat("NEED MORE ₹", "#ef4444"); }
         }
 
-        function repair() { if (state.currentCarIndex === -1) return; if (state.condition < 100) { state.condition = Math.min(100, state.condition + 5); if (state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; updateUI(); } }
-        function detail() { if (state.currentCarIndex === -1) return; if (state.detailingLevel < 3 && state.condition >= 90) { state.detailingLevel++; updateUI(); } }
-        function hireMechanic() { if (state.money >= 500000) { state.money -= 500000; state.staffCount++; updateUI(); } }
-        function buySlot() { if (state.money >= state.slots * 1000000) { state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); } }
-        function launchMarketing() { if (state.money >= 50000) { state.money -= 50000; state.hype = Math.min(5.0, state.hype + 0.5); updateUI(); } }
-        function upgradePrestige() { const cost = state.prestige * 2500000; if (state.money >= cost) { state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); } else { triggerFloat("NEED MORE ₹", "#ef4444"); } }
+        function repair() { triggerHaptic(15); if (state.currentCarIndex === -1) return; if (state.condition < 100) { state.condition = Math.min(100, state.condition + 5); if (state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; updateUI(); } }
+        function detail() { triggerHaptic(20); if (state.currentCarIndex === -1) return; if (state.detailingLevel < 3 && state.condition >= 90) { state.detailingLevel++; updateUI(); } }
+        function hireMechanic() { triggerHaptic(20); if (state.money >= 500000) { state.money -= 500000; state.staffCount++; updateUI(); } }
+        function buySlot() { triggerHaptic(20); if (state.money >= state.slots * 1000000) { state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); } }
+        function upgradePrestige() { triggerHaptic(30); const cost = state.prestige * 2500000; if (state.money >= cost) { state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); } else { triggerFloat("NEED MORE ₹", "#ef4444"); } }
 
+        // --- POKI REWARDED AD INTEGRATION ---
         function claimDaily() {
-            if (state.dailyClaimed) return;
-            state.money += 500000;
-            state.diamonds += 10;
-            state.dailyClaimed = true;
-            triggerFloat("₹5L + 10💎 CLAIMED", "#22d3ee");
-            updateUI();
+            triggerHaptic(20);
+            if (typeof PokiSDK !== 'undefined') {
+                // Pause game logic/audio here if you want during the ad
+                if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
+
+                PokiSDK.rewardedBreak().then((success) => {
+                    if(success) {
+                        state.money += 500000;
+                        state.diamonds += 10;
+                        triggerFloat("₹5L + 10💎 CLAIMED", "#22d3ee");
+                        updateUI();
+                    } else {
+                        triggerFloat("REWARD FAILED", "#ef4444");
+                    }
+                    if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
+                });
+            } else {
+                // Fallback if Poki SDK isn't loaded (e.g. testing locally)
+                state.money += 500000;
+                state.diamonds += 10;
+                triggerFloat("TEST MODE REWARD", "#22d3ee");
+                updateUI();
+            }
         }
 
-        function changeTheme(t) { state.envTheme = t; const bg = document.getElementById('garage-gradient'); if(bg) bg.className = 'garage-bg ' + t; saveGame(); }
-        function toggleInterior() { if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
-        function respray(c) { if (state.currentCarIndex !== -1 && state.money >= 50000) { state.money -= 50000; state.ownedCars[state.currentCarIndex].color = c; updateUI(); } }
-        function tuneEngine() { if (state.currentCarIndex !== -1) { const car = state.ownedCars[state.currentCarIndex]; if (state.money >= 250000 && car.engine < 3) { state.money -= 250000; car.engine++; updateUI(); } } }
-        function setFinish(f) { if (state.currentCarIndex === -1) return; const car = state.ownedCars[state.currentCarIndex]; if (f === 'Matte' && state.money >= 100000) { state.money -= 100000; car.finish = f; } else if (f === 'Pearl' && state.money >= 300000) { state.money -= 300000; car.finish = f; } else if (f === 'Chrome' && state.diamonds >= 5) { state.diamonds -= 5; car.finish = f; } else if (f === 'Standard') { car.finish = f; } else { triggerFloat("NOT ENOUGH FUNDS", "#ef4444"); return; } state.forceUpdate = true; triggerFloat(f.toUpperCase() + " FINISH", "#22d3ee"); updateUI(); }
+        function toggleInterior() { triggerHaptic(10); if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
+        function tuneEngine() { triggerHaptic(20); if (state.currentCarIndex !== -1) { const car = state.ownedCars[state.currentCarIndex]; if (state.money >= 250000 && car.engine < 3) { state.money -= 250000; car.engine++; updateUI(); } } }
+        function setFinish(f) { triggerHaptic(15); if (state.currentCarIndex === -1) return; const car = state.ownedCars[state.currentCarIndex]; if (f === 'Matte' && state.money >= 100000) { state.money -= 100000; car.finish = f; } else if (f === 'Pearl' && state.money >= 300000) { state.money -= 300000; car.finish = f; } else if (f === 'Chrome' && state.diamonds >= 5) { state.diamonds -= 5; car.finish = f; } else if (f === 'Standard') { car.finish = f; } else { triggerFloat("NOT ENOUGH FUNDS", "#ef4444"); return; } state.forceUpdate = true; triggerFloat(f.toUpperCase() + " FINISH", "#22d3ee"); updateUI(); }
 
         function takePhoto() {
+            triggerHaptic(50);
             if (state.currentCarIndex === -1) return;
             const fl = document.getElementById('camera-flash'); if(fl) fl.style.display = 'block';
             setTimeout(() => { if(fl) fl.style.display = 'none'; }, 50);
             state.hype = Math.min(5.0, state.hype + 0.3); triggerFloat("HYPE UP!", "#fbbf24"); updateUI();
         }
 
-        function prevInventoryCar() { if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
-        function nextInventoryCar() { if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
+        function prevInventoryCar() { triggerHaptic(10); if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
+        function nextInventoryCar() { triggerHaptic(10); if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
 
         function performShift() {
+            triggerHaptic(50);
             clearInterval(state.testDrive.interval); const pos = state.testDrive.pointerPos;
             if (pos >= 130 && pos <= 170) { state.performanceMult += 0.3; triggerFloat("PERFECT SHIFT!", "#22c55e"); if (exhaustFlame) { const car = state.ownedCars[state.currentCarIndex]; if (car && car.engine >= 3) exhaustFlame.material.color.set(0x00ffff); else exhaustFlame.material.color.set(0xff4400); exhaustFlame.material.opacity = 1; setTimeout(() => { if(exhaustFlame) exhaustFlame.material.opacity = 0; }, 200); } }
             else { state.condition -= 15; if(state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; }
@@ -934,6 +997,7 @@
         }
 
         function startTestDrive() {
+            triggerHaptic(20);
             if (state.currentCarIndex === -1 || state.condition < 80 || state.testDrive.active) { triggerFloat("Repair Required", "#ef4444"); return; }
             state.testDrive.active = true; state.testDrive.pointerPos = 0;
             const ov = document.getElementById('test-drive-overlay'); if(ov) ov.style.display = 'flex';
@@ -948,6 +1012,7 @@
         }
 
         function enterAuctionQueue() {
+            triggerHaptic(20);
             if (state.ownedCars.length >= state.slots) { triggerFloat("GARAGE FULL!", "#ef4444"); return; }
             if (state.money < 100000) { triggerFloat("NEED ₹1L", "#ef4444"); return; }
             state.money -= 100000;
@@ -963,6 +1028,7 @@
                         state.money -= state.auction.currentBid;
                         state.ownedCars.push({...state.auction.car, buyPrice: state.auction.currentBid, condition: 40, engine: 1, rim: 'stock', spoiler: true, trim: "#991b1b", finish: 'Standard', garageX: 0, garageZ: 0});
                         state.currentCarIndex = state.ownedCars.length - 1; state.condition = 40; triggerFloat("WON AUCTION!", "#a855f7");
+                        triggerHaptic(100);
                     } else { triggerFloat("LOST AUCTION", "#ef4444"); }
                     state.auction.active = false; updateUI();
                 }
@@ -970,9 +1036,10 @@
             }, 100);
         }
 
-        function placeAuctionBid() { if (state.money >= state.auction.currentBid + 1000000) { state.auction.currentBid += 1000000; state.auction.highBidder = "YOU"; state.auction.timer = Math.min(10, state.auction.timer + 2); } }
+        function placeAuctionBid() { triggerHaptic(10); if (state.money >= state.auction.currentBid + 1000000) { state.auction.currentBid += 1000000; state.auction.highBidder = "YOU"; state.auction.timer = Math.min(10, state.auction.timer + 2); } }
 
         function exitAuction() {
+            triggerHaptic(20);
             if (state.auction.interval) clearInterval(state.auction.interval);
             state.auction.active = false;
             triggerFloat("AUCTION CANCELLED", "#ef4444");
@@ -980,6 +1047,7 @@
         }
 
         function acceptOffer() {
+            triggerHaptic(50);
             if (state.currentCustomer) {
                 const car = state.ownedCars[state.currentCarIndex];
                 let beautyMult = 1.0;
@@ -998,11 +1066,11 @@
             }
         }
 
-        function declineOffer() { state.currentCustomer = null; updateUI(); }
-        function counterOffer() { if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
+        function declineOffer() { triggerHaptic(20); state.currentCustomer = null; updateUI(); }
+        function counterOffer() { triggerHaptic(10); if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
 
         function updateTrends() {
-            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Meister C-Line', label: 'C-LINE VALUES SPIKING (1.5x Bonus)' }];
+            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Vigilante Night-Rider', label: 'NIGHT-RIDER VALUES SPIKING (1.5x Bonus)' }];
             state.activeTrend = trends[Math.floor(Math.random() * trends.length)];
             const t = document.getElementById('ticker-text'); if(t) t.innerText = `Market Update: ${state.activeTrend.label} ... Opening new Global Branches ... Showroom Prestige increases appraisal value ...`;
             updateUI();
@@ -1018,20 +1086,15 @@
                 const vip = pool[Math.floor(Math.random() * pool.length)];
                 state.currentCustomer = { ...vip, offer: car.buyPrice * 1.4 * vip.wealth * state.hype, patience: 100 };
                 updateUI();
+                triggerHaptic([50, 100, 50]); // Distinct vibration pattern for customer arrival
             }
         }
 
         window.onload = () => {
+            loadGameData();
             init3D();
-            if (state.ownedCars.length === 0 && state.inventory[0]) {
-                state.money -= state.inventory[0].buyPrice;
-                state.ownedCars.push({...state.inventory[0], condition: 65, engine: 0, rim: 'stock', spoiler: false, trim: "#7c2d12", isRare: false, finish: 'Standard', garageX: 0, garageZ: 0});
-                state.currentCarIndex = 0; state.condition = 65;
-            } else if (state.ownedCars.length > 0) {
-                state.currentCarIndex = 0;
-                state.condition = state.ownedCars[0].condition;
-            }
-            updateTrends(); updateUI();
+            updateTrends();
+            updateUI();
             setInterval(updateTrends, 60000);
             setInterval(() => {
                 if (state.staffCount > 0 && state.currentCarIndex !== -1 && state.condition < 100) {
