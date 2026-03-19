@@ -113,7 +113,31 @@
         }
         .float-info {
             position: absolute; font-weight: 900; font-size: 14px;
-            pointer-events: none; animation: float-up 1.5s ease-out forwards; z-index: 200;
+            pointer-events: none; animation: float-up 1.5s ease-out forwards; z-index: 200; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        /* NEW: SATISFYING CASH POP PARTICLES */
+        @keyframes popUpFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+            50% { transform: translate(-50%, -40px) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -60px) scale(1); }
+        }
+        .cash-pop {
+            position: fixed; color: #4ade80; font-weight: 900; font-size: 24px;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.8), 0 2px 4px rgba(0,0,0,1);
+            pointer-events: none; z-index: 9999; animation: popUpFade 1.2s ease-out forwards;
+        }
+
+        /* NEW: INTERACTIVE TUTORIAL PULSE */
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+            100% { box-shadow: 0 0 0 15px rgba(34, 211, 238, 0); }
+        }
+        .tutorial-pulse {
+            animation: pulse-ring 1s infinite;
+            border-color: #22d3ee !important;
+            position: relative;
+            z-index: 50;
         }
 
         #camera-flash {
@@ -290,8 +314,8 @@
             </div>
         </div>
 
-        <div class="relative h-full overflow-hidden">
-            <div id="three-container"></div>
+        <div class="relative h-full overflow-hidden flex flex-col">
+            <div id="three-container" class="flex-1"></div>
             <div id="float-container" class="absolute inset-0 pointer-events-none"></div>
 
             <div class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur px-4 py-2 rounded-full border border-white/10 z-20 shadow-2xl">
@@ -306,6 +330,11 @@
             <button onclick="window.location.href='vip.html'" class="absolute top-8 right-8 z-30 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.5)] border border-amber-300/50 hover:scale-105 transition-transform">
                 VIP Vault 👑
             </button>
+
+            <div class="p-4 relative z-10 bg-gradient-to-t from-black to-transparent">
+                <p id="market-tutorial-text" class="text-[10px] text-cyan-400 font-black uppercase mb-2 text-center hidden animate-pulse">👇 Buy your first car to start! 👇</p>
+                <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-2"></div>
+            </div>
         </div>
 
         <div class="action-column flex flex-col items-center justify-center gap-3 h-full overflow-y-auto no-scrollbar py-2">
@@ -313,7 +342,7 @@
                 <span class="text-[9px] font-black text-green-400 mb-1 uppercase">Garage</span>
                 <div class="text-[12px]">🏠</div>
             </button>
-            <button onclick="repair()" class="glass-button">
+            <button onclick="repair()" id="btn-repair" class="glass-button">
                 <span class="text-[9px] font-black text-cyan-400 mb-1 uppercase">Repair</span>
                 <div class="w-8 h-1.5 bg-cyan-400/20 rounded-full overflow-hidden">
                     <div id="repair-tiny-bar" class="h-full bg-cyan-400" style="width: 0%"></div>
@@ -343,16 +372,6 @@
         </div>
     </div>
 
-    <div id="news-ticker">
-        <div id="ticker-text" class="ticker-content">
-            Market Update: Billionaire vigilante spotted buying custom hypercars... Cavallo Evo interior craftsmanship praised by critics... Aggressive Triton branding visible from every angle...
-        </div>
-    </div>
-
-    <div class="px-6 pb-6 mt-auto relative z-10">
-        <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-1 min-h-[100px]"></div>
-    </div>
-
     <div id="customer-modal" class="modal-card glass-panel p-6 shadow-2xl border-t border-white/20">
         <div class="flex items-center gap-4 mb-4">
             <div id="customer-avatar" class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-2xl border border-purple-500/30">👤</div>
@@ -374,7 +393,7 @@
             <button onclick="declineOffer()" class="btn-tap py-3 bg-red-500/10 text-red-400 text-[10px] font-black rounded-xl uppercase">Decline</button>
             <button onclick="counterOffer()" class="btn-tap py-3 bg-orange-500/10 text-orange-400 text-[10px] font-black rounded-xl border border-orange-500/20 uppercase">Counter (+10%)</button>
         </div>
-        <button onclick="acceptOffer()" class="btn-tap w-full py-4 bg-green-500 text-white text-xs font-black rounded-xl uppercase shadow-lg">Accept & Sell</button>
+        <button onclick="acceptOffer()" id="btn-accept" class="btn-tap w-full py-4 bg-green-500 text-white text-xs font-black rounded-xl uppercase shadow-lg">Accept & Sell</button>
     </div>
 
     <div id="test-drive-overlay">
@@ -397,19 +416,46 @@
                 <p class="text-[10px] text-cyan-400 font-bold uppercase mb-1">Offline Profits</p>
                 <p id="idle-profit-text" class="text-3xl font-black text-green-400">₹0</p>
             </div>
-            <button onclick="document.getElementById('idle-modal').style.display='none'" class="w-full py-4 bg-cyan-500 text-white font-black uppercase rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.4)]">Collect Cash</button>
+            <button onclick="collectIdle()" class="w-full py-4 bg-cyan-500 text-white font-black uppercase rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.4)]">Collect Cash</button>
         </div>
     </div>
 
     <script>
+        // --- 1. GAME JUICE: ZERO-BYTE SYNTHESIZER SFX ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        function sfxClick() { playTone(600, 'sine', 0.1, 0.05); }
+        function sfxCash() { playTone(1200, 'square', 0.1, 0.05); setTimeout(()=>playTone(1600, 'square', 0.2, 0.05), 100); }
+        function sfxError() { playTone(200, 'sawtooth', 0.2, 0.05); }
+
+        function spawnCashPop(amount) {
+            const pop = document.createElement('div');
+            pop.className = 'cash-pop';
+            pop.innerText = `+₹${Math.floor(amount).toLocaleString('en-IN')}`;
+            pop.style.left = '50%'; pop.style.top = '40%';
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 1200);
+        }
+
         // --- POKI SDK INIT & AUDIO AUTOPLAY ---
         let audioStarted = false;
 
-        // Initialize Poki SDK early as requested by their guidelines
         if (typeof PokiSDK !== 'undefined') {
             PokiSDK.init().then(() => {
                 console.log("Poki SDK successfully initialized");
-                PokiSDK.gameLoadingStart(); // Tell Poki we are loading
+                PokiSDK.gameLoadingStart();
             }).catch(() => {
                 console.log("Initialized, but adblock is likely enabled.");
             });
@@ -417,6 +463,7 @@
 
         document.body.addEventListener('click', () => {
             if (!audioStarted) {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
                 const bgMusic = document.getElementById('bg-music');
                 if (bgMusic) {
                     bgMusic.volume = 0.4;
@@ -433,7 +480,6 @@
             }
         }
 
-        // --- HOISTED GLOBAL UTILITIES ---
         function formatMoney(n) { return "₹" + Math.floor(n).toLocaleString('en-IN'); }
 
         function triggerFloat(txt, color) {
@@ -487,12 +533,11 @@
                 garageModelGlobal.visible = false;
                 scene.add(garageModelGlobal);
 
-                // Notify Poki that the heavy 3D assets are done loading
                 if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
 
             }, undefined, (err) => {
                 console.log("Garage model not found yet.");
-                if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished(); // Fail-safe
+                if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
             });
 
             raycaster = new THREE.Raycaster();
@@ -538,7 +583,7 @@
                 if (isDraggingCar) {
                     isDraggingCar = false;
                     controls.enabled = true;
-                    triggerHaptic(20); // Snap feel
+                    triggerHaptic(20);
 
                     if (state.currentCarIndex !== -1) {
                         state.ownedCars[state.currentCarIndex].garageX = currentModel.position.x;
@@ -557,6 +602,7 @@
         }
 
         function toggleGarageMode() {
+            sfxClick();
             triggerHaptic(50);
             state.isGarageMode = !state.isGarageMode;
             const bg = document.getElementById('garage-gradient');
@@ -751,6 +797,8 @@
         };
 
         let state;
+        let idleProfitsPending = 0;
+
         function loadGameData() {
             try {
                 const savedState = localStorage.getItem('aevith_tycoon_save_v2');
@@ -762,14 +810,11 @@
                     const now = Date.now();
                     const hoursGone = (now - state.lastSavedTime) / (1000 * 60 * 60);
 
-                    // If gone for more than 5 minutes
                     if (hoursGone > 0.08) {
-                        // Staff makes 1 Lakh per hour per staff member, capped at 24 hours
                         const cappedHours = Math.min(hoursGone, 24);
-                        const idleProfits = Math.floor(cappedHours * state.staffCount * 100000 * state.globalMult);
-                        if (idleProfits > 0) {
-                            state.money += idleProfits;
-                            document.getElementById('idle-profit-text').innerText = formatMoney(idleProfits);
+                        idleProfitsPending = Math.floor(cappedHours * state.staffCount * 500000 * state.globalMult);
+                        if (idleProfitsPending > 0) {
+                            document.getElementById('idle-profit-text').innerText = formatMoney(idleProfitsPending);
                             document.getElementById('idle-modal').style.display = 'flex';
                             triggerHaptic(100);
                         }
@@ -786,6 +831,15 @@
             }
         }
 
+        function collectIdle() {
+            sfxCash();
+            state.money += idleProfitsPending;
+            document.getElementById('idle-modal').style.display = 'none';
+            spawnCashPop(idleProfitsPending);
+            idleProfitsPending = 0;
+            updateUI();
+        }
+
         function saveGame() {
             state.lastSavedTime = Date.now();
             const stateToSave = {
@@ -796,7 +850,33 @@
             localStorage.setItem('aevith_tycoon_save_v2', JSON.stringify(stateToSave));
         }
 
-        // --- UI RENDER FUNCTIONS ---
+        // --- UI RENDER FUNCTIONS & INTERACTIVE TUTORIAL ---
+        function updateTutorial() {
+            const mText = document.getElementById('market-tutorial-text');
+            const firstCarBtn = document.querySelector('#market-list div');
+            const repairBtn = document.getElementById('btn-repair');
+            const acceptBtn = document.getElementById('btn-accept');
+
+            if(mText) mText.classList.add('hidden');
+            if(firstCarBtn) firstCarBtn.classList.remove('tutorial-pulse');
+            if(repairBtn) repairBtn.classList.remove('tutorial-pulse');
+            if(acceptBtn) acceptBtn.classList.remove('tutorial-pulse');
+
+            // Step 1: Buy First Car
+            if (state.ownedCars.length === 0 && state.inventory.length > 0 && state.money >= state.inventory[0].buyPrice) {
+                if(mText) mText.classList.remove('hidden');
+                if(firstCarBtn) firstCarBtn.classList.add('tutorial-pulse');
+            }
+            // Step 2: Repair It
+            else if (state.ownedCars.length === 1 && state.condition < 100) {
+                if(repairBtn) repairBtn.classList.add('tutorial-pulse');
+            }
+            // Step 3: Sell It
+            else if (state.currentCustomer && state.ownedCars.length === 1 && state.condition === 100) {
+                if(acceptBtn) acceptBtn.classList.add('tutorial-pulse');
+            }
+        }
+
         function renderMarket() {
             const list = document.getElementById('market-list'); if (!list) return;
             list.innerHTML = state.inventory.map(car => `<div onclick="buyCar('${car.name}')" class="min-w-[190px] h-[85px] glass-panel p-4 cursor-pointer hover:border-white/40 transition-all shadow-xl"><p class="text-[9px] font-black uppercase text-slate-400">${car.name}</p><p class="text-[11px] text-cyan-400 font-bold mt-1">${formatMoney(car.buyPrice)}</p></div>`).join('');
@@ -905,7 +985,12 @@
                 if(modal) modal.classList.remove('active');
                 if(ind) ind.className = 'w-3 h-3 rounded-full bg-slate-800';
             }
-            renderMarket(); renderSales(); renderLeaderboard(); renderBranches();
+
+            renderMarket();
+            updateTutorial();
+            renderSales();
+            renderLeaderboard();
+            renderBranches();
             saveGame();
         }
 
@@ -913,12 +998,14 @@
             triggerHaptic(20);
             const b = state.branches[i];
             if (state.money >= b.cost && state.brandRep >= b.reqRep && !b.owned) {
+                sfxCash();
                 state.money -= b.cost; b.owned = true; state.globalMult += b.bonus;
                 triggerFloat("NEW BRANCH OPENED!", "#a855f7"); updateUI();
-            } else { triggerFloat("NOT ELIGIBLE", "#ef4444"); }
+            } else { sfxError(); triggerFloat("NOT ELIGIBLE", "#ef4444"); }
         }
 
         function setTab(tab) {
+            sfxClick();
             triggerHaptic(10);
             state.activeTab = tab;
             ['staff', 'facility', 'studio', 'auction', 'sales', 'rank'].forEach(t => {
@@ -930,75 +1017,108 @@
 
         function buyCar(name) {
             triggerHaptic(20);
-            if(state.ownedCars.length >= state.slots) { triggerFloat("GARAGE FULL!", "#ef4444"); return; }
+            if(state.ownedCars.length >= state.slots) { sfxError(); triggerFloat("GARAGE FULL!", "#ef4444"); return; }
             const car = state.inventory.find(c => c.name === name);
             if (state.money >= car.buyPrice) {
+                sfxCash();
                 state.money -= car.buyPrice;
                 state.ownedCars.push({...car, condition: 30, engine: 0, trim: "#111827", isRare: false, finish: 'Standard', garageX: 0, garageZ: 0});
                 state.currentCarIndex = state.ownedCars.length - 1; state.condition = 30; updateUI();
-            } else { triggerFloat("NEED MORE ₹", "#ef4444"); }
+            } else { sfxError(); triggerFloat("NEED MORE ₹", "#ef4444"); }
         }
 
-        function repair() { triggerHaptic(15); if (state.currentCarIndex === -1) return; if (state.condition < 100) { state.condition = Math.min(100, state.condition + 5); if (state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; updateUI(); } }
-        function detail() { triggerHaptic(20); if (state.currentCarIndex === -1) return; if (state.detailingLevel < 3 && state.condition >= 90) { state.detailingLevel++; updateUI(); } }
-        function hireMechanic() { triggerHaptic(20); if (state.money >= 500000) { state.money -= 500000; state.staffCount++; updateUI(); } }
-        function buySlot() { triggerHaptic(20); if (state.money >= state.slots * 1000000) { state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); } }
-        function upgradePrestige() { triggerHaptic(30); const cost = state.prestige * 2500000; if (state.money >= cost) { state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); } else { triggerFloat("NEED MORE ₹", "#ef4444"); } }
+        function repair() {
+            triggerHaptic(15);
+            if (state.currentCarIndex === -1 || state.condition >= 100) { sfxError(); return; }
+            sfxClick();
+            state.condition = Math.min(100, state.condition + 10);
+            if (state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition;
+            updateUI();
+        }
+
+        function detail() {
+            triggerHaptic(20);
+            if (state.currentCarIndex === -1) { sfxError(); return; }
+            if (state.detailingLevel < 3 && state.condition >= 90) { sfxClick(); state.detailingLevel++; updateUI(); } else { sfxError(); }
+        }
+
+        function hireMechanic() {
+            triggerHaptic(20);
+            if (state.money >= 500000) { sfxCash(); state.money -= 500000; state.staffCount++; updateUI(); }
+            else { sfxError(); triggerFloat("NEED MORE ₹", "#ef4444"); }
+        }
+
+        function buySlot() {
+            triggerHaptic(20);
+            if (state.money >= state.slots * 1000000) { sfxCash(); state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); }
+            else { sfxError(); }
+        }
+
+        function upgradePrestige() {
+            triggerHaptic(30);
+            const cost = state.prestige * 2500000;
+            if (state.money >= cost) { sfxCash(); state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); }
+            else { sfxError(); triggerFloat("NEED MORE ₹", "#ef4444"); }
+        }
 
         // --- POKI REWARDED AD INTEGRATION ---
         function claimDaily() {
             triggerHaptic(20);
+            sfxClick();
             if (typeof PokiSDK !== 'undefined') {
-                // Pause game logic/audio here if you want during the ad
                 if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
 
                 PokiSDK.rewardedBreak().then((success) => {
                     if(success) {
-                        state.money += 500000;
+                        sfxCash();
+                        state.money += 1000000;
                         state.diamonds += 10;
-                        triggerFloat("₹5L + 10💎 CLAIMED", "#22d3ee");
+                        spawnCashPop(1000000);
                         updateUI();
                     } else {
+                        sfxError();
                         triggerFloat("REWARD FAILED", "#ef4444");
                     }
                     if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
                 });
             } else {
-                // Fallback if Poki SDK isn't loaded (e.g. testing locally)
-                state.money += 500000;
+                sfxCash();
+                state.money += 1000000;
                 state.diamonds += 10;
-                triggerFloat("TEST MODE REWARD", "#22d3ee");
+                spawnCashPop(1000000);
                 updateUI();
             }
         }
 
-        function toggleInterior() { triggerHaptic(10); if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
-        function tuneEngine() { triggerHaptic(20); if (state.currentCarIndex !== -1) { const car = state.ownedCars[state.currentCarIndex]; if (state.money >= 250000 && car.engine < 3) { state.money -= 250000; car.engine++; updateUI(); } } }
-        function setFinish(f) { triggerHaptic(15); if (state.currentCarIndex === -1) return; const car = state.ownedCars[state.currentCarIndex]; if (f === 'Matte' && state.money >= 100000) { state.money -= 100000; car.finish = f; } else if (f === 'Pearl' && state.money >= 300000) { state.money -= 300000; car.finish = f; } else if (f === 'Chrome' && state.diamonds >= 5) { state.diamonds -= 5; car.finish = f; } else if (f === 'Standard') { car.finish = f; } else { triggerFloat("NOT ENOUGH FUNDS", "#ef4444"); return; } state.forceUpdate = true; triggerFloat(f.toUpperCase() + " FINISH", "#22d3ee"); updateUI(); }
+        function toggleInterior() { triggerHaptic(10); sfxClick(); if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
+        function tuneEngine() { triggerHaptic(20); if (state.currentCarIndex !== -1) { const car = state.ownedCars[state.currentCarIndex]; if (state.money >= 250000 && car.engine < 3) { sfxCash(); state.money -= 250000; car.engine++; updateUI(); } else { sfxError(); } } }
+        function setFinish(f) { triggerHaptic(15); if (state.currentCarIndex === -1) return; const car = state.ownedCars[state.currentCarIndex]; if (f === 'Matte' && state.money >= 100000) { sfxCash(); state.money -= 100000; car.finish = f; } else if (f === 'Pearl' && state.money >= 300000) { sfxCash(); state.money -= 300000; car.finish = f; } else if (f === 'Chrome' && state.diamonds >= 5) { sfxCash(); state.diamonds -= 5; car.finish = f; } else if (f === 'Standard') { sfxClick(); car.finish = f; } else { sfxError(); triggerFloat("NOT ENOUGH FUNDS", "#ef4444"); return; } state.forceUpdate = true; triggerFloat(f.toUpperCase() + " FINISH", "#22d3ee"); updateUI(); }
 
         function takePhoto() {
             triggerHaptic(50);
             if (state.currentCarIndex === -1) return;
+            sfxClick();
             const fl = document.getElementById('camera-flash'); if(fl) fl.style.display = 'block';
             setTimeout(() => { if(fl) fl.style.display = 'none'; }, 50);
             state.hype = Math.min(5.0, state.hype + 0.3); triggerFloat("HYPE UP!", "#fbbf24"); updateUI();
         }
 
-        function prevInventoryCar() { triggerHaptic(10); if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
-        function nextInventoryCar() { triggerHaptic(10); if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
+        function prevInventoryCar() { triggerHaptic(10); sfxClick(); if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
+        function nextInventoryCar() { triggerHaptic(10); sfxClick(); if (state.ownedCars.length > 1) { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; state.condition = state.ownedCars[state.currentCarIndex].condition; updateUI(); } }
 
         function performShift() {
             triggerHaptic(50);
             clearInterval(state.testDrive.interval); const pos = state.testDrive.pointerPos;
-            if (pos >= 130 && pos <= 170) { state.performanceMult += 0.3; triggerFloat("PERFECT SHIFT!", "#22c55e"); if (exhaustFlame) { const car = state.ownedCars[state.currentCarIndex]; if (car && car.engine >= 3) exhaustFlame.material.color.set(0x00ffff); else exhaustFlame.material.color.set(0xff4400); exhaustFlame.material.opacity = 1; setTimeout(() => { if(exhaustFlame) exhaustFlame.material.opacity = 0; }, 200); } }
-            else { state.condition -= 15; if(state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; }
+            if (pos >= 130 && pos <= 170) { sfxCash(); state.performanceMult += 0.3; triggerFloat("PERFECT SHIFT!", "#22c55e"); if (exhaustFlame) { const car = state.ownedCars[state.currentCarIndex]; if (car && car.engine >= 3) exhaustFlame.material.color.set(0x00ffff); else exhaustFlame.material.color.set(0xff4400); exhaustFlame.material.opacity = 1; setTimeout(() => { if(exhaustFlame) exhaustFlame.material.opacity = 0; }, 200); } }
+            else { sfxError(); state.condition -= 15; if(state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition; }
             const ov = document.getElementById('test-drive-overlay'); if(ov) ov.style.display = 'none';
             state.testDrive.active = false; driveShake = 0; updateUI();
         }
 
         function startTestDrive() {
             triggerHaptic(20);
-            if (state.currentCarIndex === -1 || state.condition < 80 || state.testDrive.active) { triggerFloat("Repair Required", "#ef4444"); return; }
+            if (state.currentCarIndex === -1 || state.condition < 80 || state.testDrive.active) { sfxError(); triggerFloat("Repair Required", "#ef4444"); return; }
+            sfxClick();
             state.testDrive.active = true; state.testDrive.pointerPos = 0;
             const ov = document.getElementById('test-drive-overlay'); if(ov) ov.style.display = 'flex';
             const car = state.ownedCars[state.currentCarIndex];
@@ -1013,33 +1133,35 @@
 
         function enterAuctionQueue() {
             triggerHaptic(20);
-            if (state.ownedCars.length >= state.slots) { triggerFloat("GARAGE FULL!", "#ef4444"); return; }
-            if (state.money < 100000) { triggerFloat("NEED ₹1L", "#ef4444"); return; }
+            if (state.ownedCars.length >= state.slots) { sfxError(); triggerFloat("GARAGE FULL!", "#ef4444"); return; }
+            if (state.money < 100000) { sfxError(); triggerFloat("NEED ₹1L", "#ef4444"); return; }
+            sfxCash();
             state.money -= 100000;
             const rare = state.rareCars[Math.floor(Math.random() * state.rareCars.length)];
             state.auction = { active: true, car: rare, currentBid: rare.baseBid, timer: 10, highBidder: "" };
             updateUI();
             state.auction.interval = setInterval(() => {
                 state.auction.timer -= 0.1;
-                if (Math.random() > 0.96) { state.auction.currentBid += 1000000; state.auction.highBidder = "Dubai Sheikh"; state.auction.timer = Math.min(10, state.auction.timer + 1); }
+                if (Math.random() > 0.96) { sfxClick(); state.auction.currentBid += 1000000; state.auction.highBidder = "Dubai Sheikh"; state.auction.timer = Math.min(10, state.auction.timer + 1); }
                 if (state.auction.timer <= 0) {
                     clearInterval(state.auction.interval);
                     if (state.auction.highBidder === "YOU") {
+                        sfxCash();
                         state.money -= state.auction.currentBid;
                         state.ownedCars.push({...state.auction.car, buyPrice: state.auction.currentBid, condition: 40, engine: 1, rim: 'stock', spoiler: true, trim: "#991b1b", finish: 'Standard', garageX: 0, garageZ: 0});
                         state.currentCarIndex = state.ownedCars.length - 1; state.condition = 40; triggerFloat("WON AUCTION!", "#a855f7");
                         triggerHaptic(100);
-                    } else { triggerFloat("LOST AUCTION", "#ef4444"); }
+                    } else { sfxError(); triggerFloat("LOST AUCTION", "#ef4444"); }
                     state.auction.active = false; updateUI();
                 }
                 updateUI();
             }, 100);
         }
 
-        function placeAuctionBid() { triggerHaptic(10); if (state.money >= state.auction.currentBid + 1000000) { state.auction.currentBid += 1000000; state.auction.highBidder = "YOU"; state.auction.timer = Math.min(10, state.auction.timer + 2); } }
+        function placeAuctionBid() { triggerHaptic(10); if (state.money >= state.auction.currentBid + 1000000) { sfxClick(); state.auction.currentBid += 1000000; state.auction.highBidder = "YOU"; state.auction.timer = Math.min(10, state.auction.timer + 2); } else { sfxError(); } }
 
         function exitAuction() {
-            triggerHaptic(20);
+            triggerHaptic(20); sfxError();
             if (state.auction.interval) clearInterval(state.auction.interval);
             state.auction.active = false;
             triggerFloat("AUCTION CANCELLED", "#ef4444");
@@ -1049,6 +1171,7 @@
         function acceptOffer() {
             triggerHaptic(50);
             if (state.currentCustomer) {
+                sfxCash();
                 const car = state.ownedCars[state.currentCarIndex];
                 let beautyMult = 1.0;
                 if (car.finish === 'Matte') beautyMult = 1.2;
@@ -1056,21 +1179,24 @@
                 else if (car.finish === 'Chrome') beautyMult = 1.7;
                 let salePrice = state.currentCustomer.offer * (1 + (state.prestige * 0.1)) * beautyMult * state.globalMult;
                 if(state.activeTrend && (state.activeTrend.value === car.color || state.activeTrend.value === car.name)) { salePrice *= 1.5; triggerFloat("TREND BONUS!", "#22c55e"); }
+
                 state.salesLog.push({ name: car.name, buyer: state.currentCustomer.name, price: salePrice });
                 state.money += salePrice;
+                spawnCashPop(salePrice);
+
                 if (salePrice > 5000000) state.brandRep++;
                 state.ownedCars.splice(state.currentCarIndex, 1);
-                state.currentCarIndex = state.ownedCars.length - 1;
+                state.currentCarIndex = Math.max(0, state.ownedCars.length - 1);
                 state.condition = state.currentCarIndex !== -1 ? state.ownedCars[state.currentCarIndex].condition : 0;
-                state.currentCustomer = null; updateUI(); triggerFloat("SOLD! 💸", "#22c55e");
+                state.currentCustomer = null; updateUI();
             }
         }
 
-        function declineOffer() { triggerHaptic(20); state.currentCustomer = null; updateUI(); }
-        function counterOffer() { triggerHaptic(10); if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
+        function declineOffer() { triggerHaptic(20); sfxClick(); state.currentCustomer = null; updateUI(); }
+        function counterOffer() { triggerHaptic(10); sfxClick(); if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); sfxError(); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
 
         function updateTrends() {
-            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Vigilante Night-Rider', label: 'NIGHT-RIDER VALUES SPIKING (1.5x Bonus)' }];
+            const trends = [{ type: 'color', value: '#ef4444', label: 'RED CARS WANTED (1.5x Bonus)' }, { type: 'color', value: '#eab308', label: 'YELLOW EXOTICS TRENDING (1.5x Bonus)' }, { type: 'model', value: 'Meister C-Line', label: 'C-LINE VALUES SPIKING (1.5x Bonus)' }];
             state.activeTrend = trends[Math.floor(Math.random() * trends.length)];
             const t = document.getElementById('ticker-text'); if(t) t.innerText = `Market Update: ${state.activeTrend.label} ... Opening new Global Branches ... Showroom Prestige increases appraisal value ...`;
             updateUI();
@@ -1086,7 +1212,7 @@
                 const vip = pool[Math.floor(Math.random() * pool.length)];
                 state.currentCustomer = { ...vip, offer: car.buyPrice * 1.4 * vip.wealth * state.hype, patience: 100 };
                 updateUI();
-                triggerHaptic([50, 100, 50]); // Distinct vibration pattern for customer arrival
+                triggerHaptic([50, 100, 50]);
             }
         }
 
@@ -1095,7 +1221,9 @@
             init3D();
             updateTrends();
             updateUI();
+
             setInterval(updateTrends, 60000);
+
             setInterval(() => {
                 if (state.staffCount > 0 && state.currentCarIndex !== -1 && state.condition < 100) {
                     state.condition = Math.min(100, state.condition + (state.staffCount * 0.5));
@@ -1105,6 +1233,17 @@
                 state.hype = Math.max(1.0, state.hype - 0.005);
                 checkArrival();
             }, 3000);
+
+            // 10-Second Idle Auto-Income loop
+            setInterval(() => {
+                if (state.staffCount > 0) {
+                    const passiveEarn = state.staffCount * 15000;
+                    state.money += passiveEarn;
+                    spawnCashPop(passiveEarn);
+                    sfxCash();
+                    updateUI();
+                }
+            }, 10000);
         };
     </script>
 </body>
