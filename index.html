@@ -97,7 +97,6 @@
         }
         .tab-btn.active { background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); color: white; }
 
-        /* THE FIX: Changed height to strictly subtract the ticker height and removed overlapping bottom padding */
         #main-container {
             flex: 1; display: grid; grid-template-columns: 280px 1fr 80px;
             gap: 1rem; padding: 1rem; position: relative; z-index: 5;
@@ -117,6 +116,7 @@
             pointer-events: none; animation: float-up 1.5s ease-out forwards; z-index: 200; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
         }
 
+        /* SATISFYING CASH POP PARTICLES */
         @keyframes popUpFade {
             0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
             50% { transform: translate(-50%, -40px) scale(1.2); }
@@ -128,16 +128,14 @@
             pointer-events: none; z-index: 9999; animation: popUpFade 1.2s ease-out forwards;
         }
 
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
-            100% { box-shadow: 0 0 0 15px rgba(34, 211, 238, 0); }
-        }
-        .tutorial-pulse {
-            animation: pulse-ring 1s infinite;
-            border-color: #22d3ee !important;
-            position: relative;
-            z-index: 50;
-        }
+        /* INTERACTIVE TUTORIAL PULSES */
+        @keyframes pulse-ring-blue { 0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(34, 211, 238, 0); } }
+        @keyframes pulse-ring-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } }
+        @keyframes pulse-ring-green { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(74, 222, 128, 0); } }
+
+        .tutorial-pulse-blue { animation: pulse-ring-blue 1s infinite; border-color: #22d3ee !important; position: relative; z-index: 50; }
+        .tutorial-pulse-red { animation: pulse-ring-red 1s infinite; border-color: #ef4444 !important; position: relative; z-index: 50; }
+        .tutorial-pulse-green { animation: pulse-ring-green 1s infinite; border-color: #4ade80 !important; position: relative; z-index: 50; }
 
         #camera-flash {
             position: fixed; inset: 0; background: white;
@@ -330,7 +328,7 @@
             </button>
 
             <div class="pt-4 px-4 pb-8 relative z-10 bg-gradient-to-t from-black to-transparent">
-                <p id="market-tutorial-text" class="text-[10px] text-cyan-400 font-black uppercase mb-2 text-center hidden animate-pulse">👇 Buy your first car to start! 👇</p>
+                <p id="market-tutorial-text" class="text-[10px] text-cyan-400 font-black uppercase mb-2 text-center hidden">👇 Buy your first car to start! 👇</p>
                 <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-2"></div>
             </div>
         </div>
@@ -436,6 +434,36 @@
         function sfxClick() { playTone(600, 'sine', 0.1, 0.05); }
         function sfxCash() { playTone(1200, 'square', 0.1, 0.05); setTimeout(()=>playTone(1600, 'square', 0.2, 0.05), 100); }
         function sfxError() { playTone(200, 'sawtooth', 0.2, 0.05); }
+        function sfxSuccess() {
+            playTone(400, 'sine', 0.1, 0.05);
+            setTimeout(()=>playTone(600, 'sine', 0.1, 0.05), 100);
+            setTimeout(()=>playTone(1000, 'sine', 0.3, 0.05), 200);
+        }
+
+        // --- VIP PARTICLE SYSTEM PORTED FOR MAIN PAGE ---
+        function spawnParticles() {
+            for(let i=0; i<25; i++) {
+                let p = document.createElement('div');
+                p.style.position = 'fixed';
+                p.style.left = '50%'; p.style.top = '50%';
+                p.style.width = '8px'; p.style.height = '8px';
+                p.style.backgroundColor = ['#fbbf24', '#4ade80', '#22d3ee', '#a855f7'][Math.floor(Math.random()*4)];
+                p.style.borderRadius = '50%';
+                p.style.pointerEvents = 'none';
+                p.style.zIndex = '9999';
+                p.style.boxShadow = `0 0 8px ${p.style.backgroundColor}`;
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 120 + 40;
+                let dx = Math.cos(angle) * speed;
+                let dy = Math.sin(angle) * speed;
+                p.animate([
+                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                    { transform: `translate(${dx}px, ${dy}px) scale(0)`, opacity: 0 }
+                ], { duration: 1000, easing: 'cubic-bezier(.25,.8,.25,1)' });
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
 
         function spawnCashPop(amount) {
             const pop = document.createElement('div');
@@ -470,7 +498,6 @@
             }
         }, { once: true });
 
-        // --- NEW: HAPTIC FEEDBACK FUNCTION ---
         function triggerHaptic(duration = 30) {
             if (navigator.vibrate) {
                 navigator.vibrate(duration);
@@ -767,7 +794,7 @@
         const defaultState = {
             money: 1500000, diamonds: 25, condition: 0, detailingLevel: 0, currentCarIndex: -1, staffCount: 0, prestige: 1, hype: 1.0, slots: 1,
             brandRep: 1, globalMult: 1.0, dailyClaimed: false, isGarageMode: false, lastSavedTime: null,
-            ownedCars: [], salesLog: [], activeTrend: null,
+            ownedCars: [], salesLog: [], activeTrend: null, tutorialDone: false,
             inventory: [
                 { name: "Meister C-Line", filename: 'cla.glb', buyPrice: 1200000, color: "#ef4444", trim: "#7c2d12", engine: 0, isRare: false, baseHP: 180, finish: 'Standard' },
                 { name: "Bavarian 3-Spec", filename: '3series.glb', buyPrice: 2800000, color: "#1d4ed8", trim: "#111827", engine: 0, isRare: false, baseHP: 255, finish: 'Standard' },
@@ -802,6 +829,8 @@
                 state = savedState ? JSON.parse(savedState) : defaultState;
                 state.isGarageMode = false;
 
+                if (typeof state.tutorialDone === 'undefined') state.tutorialDone = false;
+
                 // IDLE OFFLINE PROGRESSION LOGIC
                 if (state.lastSavedTime && state.staffCount > 0) {
                     const now = Date.now();
@@ -818,18 +847,14 @@
                     }
                 }
 
-                // Show tutorial for brand new players
-                if (!savedState) {
-                    setTimeout(() => triggerFloat("TUTORIAL: Buy cars below to start!", "#a855f7"), 2000);
-                }
-
             } catch (e) {
                 state = defaultState;
             }
         }
 
         function collectIdle() {
-            sfxCash();
+            sfxSuccess();
+            spawnParticles();
             state.money += idleProfitsPending;
             document.getElementById('idle-modal').style.display = 'none';
             spawnCashPop(idleProfitsPending);
@@ -849,28 +874,45 @@
 
         // --- UI RENDER FUNCTIONS & INTERACTIVE TUTORIAL ---
         function updateTutorial() {
+            if (state.tutorialDone) return;
+
             const mText = document.getElementById('market-tutorial-text');
             const firstCarBtn = document.querySelector('#market-list div');
             const repairBtn = document.getElementById('btn-repair');
             const acceptBtn = document.getElementById('btn-accept');
 
             if(mText) mText.classList.add('hidden');
-            if(firstCarBtn) firstCarBtn.classList.remove('tutorial-pulse');
-            if(repairBtn) repairBtn.classList.remove('tutorial-pulse');
-            if(acceptBtn) acceptBtn.classList.remove('tutorial-pulse');
+            if(firstCarBtn) firstCarBtn.classList.remove('tutorial-pulse-blue');
+            if(repairBtn) { repairBtn.classList.remove('tutorial-pulse-red'); repairBtn.querySelector('span').innerText = "Repair"; }
+            if(acceptBtn) { acceptBtn.classList.remove('tutorial-pulse-green'); acceptBtn.innerText = "Accept & Sell"; }
 
             // Step 1: Buy First Car
             if (state.ownedCars.length === 0 && state.inventory.length > 0 && state.money >= state.inventory[0].buyPrice) {
-                if(mText) mText.classList.remove('hidden');
-                if(firstCarBtn) firstCarBtn.classList.add('tutorial-pulse');
+                if(mText) { mText.classList.remove('hidden'); mText.innerText = "👇 CLICK TO BUY FIRST CAR 👇"; }
+                if(firstCarBtn) firstCarBtn.classList.add('tutorial-pulse-blue');
             }
             // Step 2: Repair It
             else if (state.ownedCars.length === 1 && state.condition < 100) {
-                if(repairBtn) repairBtn.classList.add('tutorial-pulse');
+                if(repairBtn) {
+                    repairBtn.classList.add('tutorial-pulse-red');
+                    repairBtn.querySelector('span').innerText = "CLICK!";
+                }
             }
             // Step 3: Sell It
-            else if (state.currentCustomer && state.ownedCars.length === 1 && state.condition === 100) {
-                if(acceptBtn) acceptBtn.classList.add('tutorial-pulse');
+            else if (state.ownedCars.length === 1 && state.condition === 100) {
+                if (!state.currentCustomer) {
+                    // Force a customer to spawn instantly for the tutorial
+                    checkArrival();
+                } else if (acceptBtn) {
+                    acceptBtn.classList.add('tutorial-pulse-green');
+                    acceptBtn.innerText = "SELL FOR PROFIT!";
+                }
+            }
+            // End Tutorial
+            else if (state.salesLog.length > 0) {
+                state.tutorialDone = true;
+                sfxSuccess();
+                spawnParticles();
             }
         }
 
@@ -995,7 +1037,7 @@
             triggerHaptic(20);
             const b = state.branches[i];
             if (state.money >= b.cost && state.brandRep >= b.reqRep && !b.owned) {
-                sfxCash();
+                sfxSuccess(); spawnParticles();
                 state.money -= b.cost; b.owned = true; state.globalMult += b.bonus;
                 triggerFloat("NEW BRANCH OPENED!", "#a855f7"); updateUI();
             } else { sfxError(); triggerFloat("NOT ELIGIBLE", "#ef4444"); }
@@ -1041,20 +1083,20 @@
 
         function hireMechanic() {
             triggerHaptic(20);
-            if (state.money >= 500000) { sfxCash(); state.money -= 500000; state.staffCount++; updateUI(); }
+            if (state.money >= 500000) { sfxSuccess(); spawnParticles(); state.money -= 500000; state.staffCount++; updateUI(); }
             else { sfxError(); triggerFloat("NEED MORE ₹", "#ef4444"); }
         }
 
         function buySlot() {
             triggerHaptic(20);
-            if (state.money >= state.slots * 1000000) { sfxCash(); state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); }
+            if (state.money >= state.slots * 1000000) { sfxSuccess(); spawnParticles(); state.money -= state.slots * 1000000; state.slots++; triggerFloat("SLOT UNLOCKED", "#22d3ee"); updateUI(); }
             else { sfxError(); }
         }
 
         function upgradePrestige() {
             triggerHaptic(30);
             const cost = state.prestige * 2500000;
-            if (state.money >= cost) { sfxCash(); state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); }
+            if (state.money >= cost) { sfxSuccess(); spawnParticles(); state.money -= cost; state.prestige++; triggerFloat(`PRESTIGE ${state.prestige}!`, "#a855f7"); updateUI(); }
             else { sfxError(); triggerFloat("NEED MORE ₹", "#ef4444"); }
         }
 
@@ -1067,7 +1109,7 @@
 
                 PokiSDK.rewardedBreak().then((success) => {
                     if(success) {
-                        sfxCash();
+                        sfxSuccess(); spawnParticles();
                         state.money += 1000000;
                         state.diamonds += 10;
                         spawnCashPop(1000000);
@@ -1079,7 +1121,7 @@
                     if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
                 });
             } else {
-                sfxCash();
+                sfxSuccess(); spawnParticles();
                 state.money += 1000000;
                 state.diamonds += 10;
                 spawnCashPop(1000000);
@@ -1143,7 +1185,7 @@
                 if (state.auction.timer <= 0) {
                     clearInterval(state.auction.interval);
                     if (state.auction.highBidder === "YOU") {
-                        sfxCash();
+                        sfxSuccess(); spawnParticles();
                         state.money -= state.auction.currentBid;
                         state.ownedCars.push({...state.auction.car, buyPrice: state.auction.currentBid, condition: 40, engine: 1, rim: 'stock', spoiler: true, trim: "#991b1b", finish: 'Standard', garageX: 0, garageZ: 0});
                         state.currentCarIndex = state.ownedCars.length - 1; state.condition = 40; triggerFloat("WON AUCTION!", "#a855f7");
@@ -1168,7 +1210,7 @@
         function acceptOffer() {
             triggerHaptic(50);
             if (state.currentCustomer) {
-                sfxCash();
+                sfxSuccess(); spawnParticles();
                 const car = state.ownedCars[state.currentCarIndex];
                 let beautyMult = 1.0;
                 if (car.finish === 'Matte') beautyMult = 1.2;
