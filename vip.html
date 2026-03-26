@@ -24,7 +24,6 @@
         }
 
         .gold-gradient {
-            /* NEW: Image Background with a dark tint so the UI remains readable */
             background: linear-gradient(rgba(10, 5, 0, 0.6), rgba(0, 0, 0, 0.9)), url('https://cdn.sanity.io/images/j29qhhdl/production/f83979ebc93090c5d200918ee8c027c1659c61dd-1280x719.jpg');
             background-size: cover;
             background-position: center;
@@ -99,6 +98,22 @@
             100% { opacity: 0.5; }
         }
         .animate-shimmer { animation: shimmer 3s infinite; }
+
+        /* SFX & PARTICLE STYLES */
+        .float-info {
+            position: absolute; font-weight: 900; font-size: 14px;
+            pointer-events: none; z-index: 200; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        }
+        @keyframes popUpFade {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+            50% { transform: translate(-50%, -40px) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -60px) scale(1); }
+        }
+        .cash-pop {
+            position: fixed; color: #fbbf24; font-weight: 900; font-size: 24px;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 2px 4px rgba(0,0,0,1);
+            pointer-events: none; z-index: 9999; animation: popUpFade 1.2s ease-out forwards;
+        }
     </style>
 </head>
 <body onclick="unlockAudio()">
@@ -109,12 +124,12 @@
 
     <div class="flex h-full relative z-10">
         <div class="vip-sidebar vip-glass p-8">
-            <div class="flex justify-between items-center mb-10">
+            <div class="flex justify-between items-center mb-8 flex-shrink-0">
                 <span class="vip-badge animate-shimmer">EXECUTIVE VIP</span>
-                <button onclick="window.location.href='index.html'" class="text-[9px] font-black text-stone-500 uppercase hover:text-white transition-colors">Exit Vault ◀</button>
+                <button onclick="sfxClick(); setTimeout(()=>window.location.href='index.html', 150);" class="text-[9px] font-black text-stone-500 uppercase hover:text-white transition-colors">Exit Vault ◀</button>
             </div>
 
-            <div class="mb-12 text-center">
+            <div class="mb-8 text-center flex-shrink-0">
                 <p class="text-[10px] text-amber-500/50 font-black uppercase tracking-[0.4em] mb-2">Vault Balance</p>
                 <h1 id="vip-money" class="text-4xl font-black text-white italic tracking-tighter">₹0</h1>
                 <div class="flex justify-center items-center gap-2 mt-4">
@@ -123,29 +138,68 @@
                 </div>
             </div>
 
-            <div class="flex-1 space-y-6 no-scrollbar overflow-y-auto">
-                <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3">Elite Customization</p>
+            <div class="flex-1 space-y-6 no-scrollbar overflow-y-auto pb-6">
 
-                <button onclick="applyLuxuryFinish('Gold')" class="gold-btn w-full flex flex-col items-center">
-                    <span>24K Gold Nano-Plating</span>
-                    <span class="text-[7px] opacity-70 mt-1 uppercase italic tracking-normal font-normal">Apply Elite Shader (100💎)</span>
-                </button>
-
-                <button onclick="applyLuxuryFinish('Carbon')" class="w-full py-4 bg-stone-900/50 border border-stone-800 rounded-xl text-[10px] font-black text-stone-400 uppercase tracking-widest hover:border-amber-500/50 hover:text-amber-500 transition-all">
-                    Forged Carbon Finish
-                </button>
-
-                <div class="h-px bg-amber-500/10 my-6"></div>
-
-                <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3">Elite Contracts</p>
-                <div class="p-4 bg-black/40 border border-amber-500/10 rounded-xl group hover:border-amber-500/30 transition-all">
-                    <p class="text-[10px] font-black text-white uppercase group-hover:text-amber-500">The Monaco Syndicate</p>
-                    <p class="text-[8px] text-stone-500 mt-2 uppercase italic leading-relaxed">Deliver a 100% condition Asset</p>
-                    <p class="text-[10px] text-green-400 font-bold mt-4">Payout: ₹50,00,00,000</p>
+                <div>
+                    <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3 mb-4">Elite Customization</p>
+                    <button onclick="applyLuxuryFinish('Gold')" class="gold-btn w-full flex flex-col items-center mb-3">
+                        <span>24K Gold Nano-Plating</span>
+                        <span class="text-[7px] opacity-70 mt-1 uppercase italic tracking-normal font-normal">Apply Elite Shader (100💎)</span>
+                    </button>
+                    <button onclick="applyLuxuryFinish('Carbon')" class="w-full py-4 bg-stone-900/50 border border-stone-800 rounded-xl text-[10px] font-black text-stone-400 uppercase tracking-widest hover:border-amber-500/50 hover:text-amber-500 transition-all">
+                        Forged Carbon Finish
+                    </button>
                 </div>
+
+                <div class="h-px bg-amber-500/10"></div>
+
+                <div>
+                    <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3 mb-4">Executive Perks</p>
+
+                    <button id="btn-perk-2x" onclick="buyPerk('2x')" class="w-full py-3 bg-green-900/30 border border-green-500/30 rounded-xl text-[9px] font-black text-green-400 uppercase hover:bg-green-800/50 transition-all flex flex-col items-center mb-3">
+                        <span>2X Global Revenue</span>
+                        <span class="text-[7px] text-stone-400 font-normal mt-1 tracking-wider">Cost: ₹10,00,00,000</span>
+                    </button>
+
+                    <button id="btn-perk-auto" onclick="buyPerk('auto')" class="w-full py-3 bg-cyan-900/30 border border-cyan-500/30 rounded-xl text-[9px] font-black text-cyan-400 uppercase hover:bg-cyan-800/50 transition-all flex flex-col items-center">
+                        <span>Auto-Detailer Suite</span>
+                        <span class="text-[7px] text-stone-400 font-normal mt-1 tracking-wider">Cost: 200 💎</span>
+                    </button>
+                </div>
+
+                <div class="h-px bg-amber-500/10"></div>
+
+                <div>
+                    <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3 mb-4">Elite Missions</p>
+
+                    <div class="bg-black/50 border border-amber-500/20 rounded-xl p-4 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <p class="text-[9px] font-black text-white uppercase">Billionaire Club</p>
+                            <span class="text-[8px] text-amber-500 font-black">50 💎</span>
+                        </div>
+                        <p class="text-[7px] text-stone-400 mb-3">Reach ₹10,00,00,000 Bank Balance</p>
+                        <div class="h-1.5 bg-stone-900 rounded-full overflow-hidden mb-3">
+                            <div id="m1-progress" class="h-full bg-amber-500 transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <button id="btn-m1" onclick="claimMission(1)" class="w-full py-2.5 bg-stone-800 text-[8px] font-black text-stone-500 rounded-lg uppercase pointer-events-none transition-colors">In Progress</button>
+                    </div>
+
+                    <div class="bg-black/50 border border-amber-500/20 rounded-xl p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <p class="text-[9px] font-black text-white uppercase">The Collector</p>
+                            <span class="text-[8px] text-green-400 font-black">₹5 CR</span>
+                        </div>
+                        <p class="text-[7px] text-stone-400 mb-3">Own 5 VIP Class Vehicles</p>
+                        <div class="h-1.5 bg-stone-900 rounded-full overflow-hidden mb-3">
+                            <div id="m2-progress" class="h-full bg-green-500 transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <button id="btn-m2" onclick="claimMission(2)" class="w-full py-2.5 bg-stone-800 text-[8px] font-black text-stone-500 rounded-lg uppercase pointer-events-none transition-colors">In Progress</button>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="mt-auto pt-6 border-t border-amber-500/10 text-center">
+            <div class="mt-auto pt-4 border-t border-amber-500/10 text-center flex-shrink-0">
                 <p class="text-[8px] text-stone-700 uppercase font-black tracking-[0.3em]">Encrypted Session v1.0</p>
             </div>
         </div>
@@ -164,10 +218,60 @@
     </div>
 
     <script>
-        // --- AUDIO AUTOPLAY LOGIC ---
+        // --- SFX & HAPTICS ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        function sfxClick() { playTone(700, 'sine', 0.1, 0.05); }
+        function sfxCash() { playTone(1200, 'square', 0.1, 0.05); setTimeout(()=>playTone(1600, 'square', 0.2, 0.05), 100); }
+        function sfxError() { playTone(200, 'sawtooth', 0.2, 0.05); }
+        function sfxSuccess() {
+            playTone(400, 'sine', 0.1, 0.05);
+            setTimeout(()=>playTone(600, 'sine', 0.1, 0.05), 100);
+            setTimeout(()=>playTone(1000, 'sine', 0.3, 0.05), 200);
+        }
+
+        function triggerHaptic(duration = 30) {
+            if (navigator.vibrate) navigator.vibrate(duration);
+        }
+
+        function spawnParticles() {
+            for(let i=0; i<40; i++) {
+                let p = document.createElement('div');
+                p.style.position = 'fixed';
+                p.style.left = '50%'; p.style.top = '50%';
+                p.style.width = '10px'; p.style.height = '10px';
+                p.style.backgroundColor = ['#fbbf24', '#4ade80', '#22d3ee', '#a855f7'][Math.floor(Math.random()*4)];
+                p.style.borderRadius = '50%';
+                p.style.pointerEvents = 'none';
+                p.style.zIndex = '9999';
+                p.style.boxShadow = `0 0 10px ${p.style.backgroundColor}`;
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 150 + 50;
+                let dx = Math.cos(angle) * speed;
+                let dy = Math.sin(angle) * speed;
+                p.animate([
+                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                    { transform: `translate(${dx}px, ${dy}px) scale(0)`, opacity: 0 }
+                ], { duration: 1000, easing: 'cubic-bezier(.25,.8,.25,1)' });
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
         let audioStarted = false;
-        document.body.addEventListener('click', () => {
+        function unlockAudio() {
             if (!audioStarted) {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
                 const bgMusic = document.getElementById('bg-music');
                 if (bgMusic) {
                     bgMusic.volume = 0.4;
@@ -175,14 +279,14 @@
                     audioStarted = true;
                 }
             }
-        }, { once: true });
+        }
 
         // --- GLOBAL SAVE SYSTEM INTEGRATION ---
         let state = {};
 
         function loadGame() {
             try {
-                const savedState = localStorage.getItem('aevith_tycoon_save');
+                const savedState = localStorage.getItem('aevith_tycoon_save_v2');
                 if (savedState) {
                     state = JSON.parse(savedState);
                 } else {
@@ -192,7 +296,10 @@
                 state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
             }
 
-            // --- NEW CARS ADDED HERE ---
+            // Ensure VIP Perks & Missions exist in save
+            if (!state.vipPerks) state.vipPerks = { income2x: false, autoDetail: false };
+            if (!state.vipMissions) state.vipMissions = { m1: false, m2: false };
+
             const vipCars = [
                 { name: "Bouvetti Centurion", filename: "bug.glb", finish: "Standard", buyPrice: 50000000 },
                 { name: "Pegasus Zephyr", filename: "pag.glb", finish: "Standard", buyPrice: 40000000 },
@@ -205,7 +312,8 @@
                 { name: "Kitubshi Eclipse", filename: "kit.glb", finish: "Standard", buyPrice: 3200000 },
                 { name: "Chinside Maxda", filename: "chin.glb", finish: "Standard", buyPrice: 2900000 },
                 { name: "Maxda 1993", filename: "max.glb", finish: "Standard", buyPrice: 5000000 },
-                { name: "Vigilante Night-Rider", filename: "bat1.glb", finish: "Standard", buyPrice: 25000000 }
+                { name: "Vigilante Night-Rider", filename: "bat1.glb", finish: "Standard", buyPrice: 25000000 },
+                { name: "Aura Sielle", filename: "aura.glb", finish: "Standard", buyPrice: 6500000 }
             ];
 
             vipCars.forEach(vipCar => {
@@ -214,7 +322,6 @@
                 }
             });
 
-            // Set index to the first VIP car
             state.currentCarIndex = state.ownedCars.findIndex(car => car.name === "Bouvetti Centurion");
             if(state.currentCarIndex === -1) state.currentCarIndex = 0;
         }
@@ -225,7 +332,7 @@
                 testDrive: state.testDrive ? { ...state.testDrive, interval: null } : {},
                 auction: state.auction ? { ...state.auction, interval: null } : {}
             };
-            localStorage.setItem('aevith_tycoon_save', JSON.stringify(stateToSave));
+            localStorage.setItem('aevith_tycoon_save_v2', JSON.stringify(stateToSave));
         }
 
         const formatMoney = (n) => "₹" + Math.floor(n).toLocaleString('en-IN');
@@ -240,6 +347,92 @@
                 y -= 0.5; op -= 0.02; el.style.top = y + '%'; el.style.opacity = op;
                 if(op <= 0) { clearInterval(anim); el.remove(); }
             }, 16);
+        }
+
+        // --- VIP PERKS & MISSIONS LOGIC ---
+        function buyPerk(type) {
+            triggerHaptic(30);
+            if (type === '2x') {
+                if (state.vipPerks.income2x) { sfxError(); triggerFloat("ALREADY OWNED", "#ef4444"); return; }
+                if (state.money >= 100000000) {
+                    sfxSuccess(); spawnParticles();
+                    state.money -= 100000000;
+                    state.globalMult += 1.0; // Adds 100% boost to main game sales
+                    state.vipPerks.income2x = true;
+                    triggerFloat("2X REVENUE SECURED", "#fbbf24");
+                } else { sfxError(); triggerFloat("NEED ₹10 CR", "#ef4444"); }
+            } else if (type === 'auto') {
+                if (state.vipPerks.autoDetail) { sfxError(); triggerFloat("ALREADY OWNED", "#ef4444"); return; }
+                if (state.diamonds >= 200) {
+                    sfxSuccess(); spawnParticles();
+                    state.diamonds -= 200;
+                    state.vipPerks.autoDetail = true;
+                    triggerFloat("AUTO-DETAILER ACTIVE", "#22d3ee");
+                } else { sfxError(); triggerFloat("NEED 200💎", "#ef4444"); }
+            }
+            updateUI(); saveGame();
+        }
+
+        function claimMission(id) {
+            triggerHaptic(50);
+            if (id === 1 && !state.vipMissions.m1) {
+                sfxSuccess(); spawnParticles();
+                state.diamonds += 50;
+                state.vipMissions.m1 = true;
+                triggerFloat("+50💎 CLAIMED", "#22d3ee");
+            } else if (id === 2 && !state.vipMissions.m2) {
+                sfxSuccess(); spawnParticles();
+                state.money += 50000000;
+                state.vipMissions.m2 = true;
+                triggerFloat("+₹5 CR CLAIMED", "#4ade80");
+            }
+            updateUI(); saveGame();
+        }
+
+        function updateUI() {
+            document.getElementById('vip-money').innerText = formatMoney(state.money);
+            document.getElementById('vip-diamonds').innerText = state.diamonds.toLocaleString();
+
+            // Update Perks UI
+            const btn2x = document.getElementById('btn-perk-2x');
+            if (state.vipPerks.income2x) {
+                btn2x.innerHTML = "<span>OWNED: 2X REVENUE</span>";
+                btn2x.className = "w-full py-4 bg-green-900/10 border border-green-500/20 rounded-xl text-[9px] font-black text-green-500 uppercase opacity-50 cursor-not-allowed mb-3";
+            }
+            const btnAuto = document.getElementById('btn-perk-auto');
+            if (state.vipPerks.autoDetail) {
+                btnAuto.innerHTML = "<span>OWNED: AUTO-DETAILER</span>";
+                btnAuto.className = "w-full py-4 bg-cyan-900/10 border border-cyan-500/20 rounded-xl text-[9px] font-black text-cyan-500 uppercase opacity-50 cursor-not-allowed";
+            }
+
+            // Update Mission 1 (10 Crore Balance)
+            let m1Pct = Math.min(100, (state.money / 100000000) * 100);
+            document.getElementById('m1-progress').style.width = m1Pct + '%';
+            const btnM1 = document.getElementById('btn-m1');
+            if (state.vipMissions.m1) {
+                btnM1.innerText = "COMPLETED";
+                btnM1.className = "w-full py-2.5 bg-green-900/30 text-[8px] font-black text-green-500 rounded-lg uppercase pointer-events-none";
+            } else if (m1Pct >= 100) {
+                btnM1.innerText = "CLAIM REWARD (50💎)";
+                btnM1.className = "w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-[8px] font-black text-black rounded-lg uppercase cursor-pointer transition-colors shadow-[0_0_15px_rgba(245,158,11,0.4)]";
+                btnM1.style.pointerEvents = 'auto';
+            }
+
+            // Update Mission 2 (Own 5 VIP Cars)
+            const vipNames = ["Bouvetti Centurion", "Pegasus Zephyr", "Torino Rebelto", "Stuttgart 99-GT", "Ashton Vanguard", "Chevromet Corlet", "Tissan 350Z", "Topta Supra", "Kitubshi Eclipse", "Chinside Maxda", "Maxda 1993", "Vigilante Night-Rider", "Aura Sielle"];
+            let vipCount = 0;
+            state.ownedCars.forEach(c => { if(vipNames.includes(c.name)) vipCount++; });
+            let m2Pct = Math.min(100, (vipCount / 5) * 100);
+            document.getElementById('m2-progress').style.width = m2Pct + '%';
+            const btnM2 = document.getElementById('btn-m2');
+            if (state.vipMissions.m2) {
+                btnM2.innerText = "COMPLETED";
+                btnM2.className = "w-full py-2.5 bg-green-900/30 text-[8px] font-black text-green-500 rounded-lg uppercase pointer-events-none";
+            } else if (m2Pct >= 100) {
+                btnM2.innerText = "CLAIM REWARD (₹5 CR)";
+                btnM2.className = "w-full py-2.5 bg-green-500 hover:bg-green-400 text-[8px] font-black text-black rounded-lg uppercase cursor-pointer transition-colors shadow-[0_0_15px_rgba(34,197,94,0.4)]";
+                btnM2.style.pointerEvents = 'auto';
+            }
         }
 
         // --- 3D ENGINE ---
@@ -349,31 +542,39 @@
         }
 
         function applyLuxuryFinish(f) {
+            triggerHaptic(20);
             if (state.diamonds >= 100) {
+                sfxCash();
                 state.diamonds -= 100;
                 state.ownedCars[state.currentCarIndex].finish = f;
                 updateMaterials(); updateUI();
                 saveGame();
                 triggerFloat(f.toUpperCase() + " APPLIED", "#fbbf24");
             } else {
+                sfxError();
                 triggerFloat("NEED 100💎", "#ef4444");
             }
         }
 
-        function nextCar() { state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; loadCar(); saveGame(); }
-        function prevCar() { state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; loadCar(); saveGame(); }
+        function nextCar() { sfxClick(); triggerHaptic(10); state.currentCarIndex = (state.currentCarIndex + 1) % state.ownedCars.length; loadCar(); saveGame(); }
+        function prevCar() { sfxClick(); triggerHaptic(10); state.currentCarIndex = (state.currentCarIndex - 1 + state.ownedCars.length) % state.ownedCars.length; loadCar(); saveGame(); }
 
-        function updateUI() {
-            document.getElementById('vip-money').innerText = formatMoney(state.money);
-            document.getElementById('vip-diamonds').innerText = state.diamonds.toLocaleString();
-        }
+        window.onload = () => {
+            loadGame();
+            init3D();
+            updateUI();
 
-        function unlockAudio() {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            if (ctx.state === 'suspended') ctx.resume();
-        }
-
-        window.onload = () => { loadGame(); init3D(); updateUI(); };
+            // Core background progression loop for VIP Perks
+            setInterval(() => {
+                if (state.vipPerks && state.vipPerks.autoDetail) {
+                    let repaired = false;
+                    state.ownedCars.forEach(c => {
+                        if(c.condition < 100) { c.condition = 100; repaired = true; }
+                    });
+                    if(repaired) { updateUI(); saveGame(); }
+                }
+            }, 5000);
+        };
     </script>
 </body>
 </html>
