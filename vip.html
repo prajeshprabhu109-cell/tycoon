@@ -126,10 +126,10 @@
         <div class="vip-sidebar vip-glass p-8">
             <div class="flex justify-between items-center mb-8 flex-shrink-0">
                 <span class="vip-badge animate-shimmer">EXECUTIVE VIP</span>
-                <button onclick="sfxClick(); setTimeout(()=>window.location.href='index.html', 150);" class="text-[9px] font-black text-stone-500 uppercase hover:text-white transition-colors">Exit Vault ◀</button>
+                <button onclick="sfxClick(); setTimeout(()=>window.location.href='index.html', 150);" class="text-[9px] font-black text-stone-500 uppercase hover:text-white transition-colors p-2">Exit Vault ◀</button>
             </div>
 
-            <div class="mb-8 text-center flex-shrink-0">
+            <div class="mb-6 text-center flex-shrink-0">
                 <p class="text-[10px] text-amber-500/50 font-black uppercase tracking-[0.4em] mb-2">Vault Balance</p>
                 <h1 id="vip-money" class="text-4xl font-black text-white italic tracking-tighter">₹0</h1>
                 <div class="flex justify-center items-center gap-2 mt-4">
@@ -139,6 +139,17 @@
             </div>
 
             <div class="flex-1 space-y-6 no-scrollbar overflow-y-auto pb-6">
+
+                <div class="bg-black/50 border border-amber-500/20 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-[9px] font-black text-white uppercase tracking-widest">VIP Daily Drop</p>
+                        <span id="streak-count" class="text-[8px] text-amber-500 font-black bg-amber-500/10 px-2 py-1 rounded">Streak: 0</span>
+                    </div>
+                    <p class="text-[7px] text-stone-400 mb-3 uppercase italic">Day 3 grants a 100💎 Bonus</p>
+                    <button id="btn-vip-daily" onclick="claimVipDaily()" class="w-full py-3 bg-amber-500 text-[9px] font-black text-black rounded-lg uppercase transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-[1.02] active:scale-95">Claim Reward</button>
+                </div>
+
+                <div class="h-px bg-amber-500/10"></div>
 
                 <div>
                     <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3 mb-4">Elite Customization</p>
@@ -181,7 +192,7 @@
                         <div class="h-1.5 bg-stone-900 rounded-full overflow-hidden mb-3">
                             <div id="m1-progress" class="h-full bg-amber-500 transition-all duration-1000" style="width: 0%"></div>
                         </div>
-                        <button id="btn-m1" onclick="claimMission(1)" class="w-full py-2.5 bg-stone-800 text-[8px] font-black text-stone-500 rounded-lg uppercase pointer-events-none transition-colors">In Progress</button>
+                        <button id="btn-m1" onclick="claimMission(1)" class="w-full py-3 bg-stone-800 text-[9px] font-black text-stone-500 rounded-lg uppercase pointer-events-none transition-colors">In Progress</button>
                     </div>
 
                     <div class="bg-black/50 border border-amber-500/20 rounded-xl p-4">
@@ -193,8 +204,16 @@
                         <div class="h-1.5 bg-stone-900 rounded-full overflow-hidden mb-3">
                             <div id="m2-progress" class="h-full bg-green-500 transition-all duration-1000" style="width: 0%"></div>
                         </div>
-                        <button id="btn-m2" onclick="claimMission(2)" class="w-full py-2.5 bg-stone-800 text-[8px] font-black text-stone-500 rounded-lg uppercase pointer-events-none transition-colors">In Progress</button>
+                        <button id="btn-m2" onclick="claimMission(2)" class="w-full py-3 bg-stone-800 text-[9px] font-black text-stone-500 rounded-lg uppercase pointer-events-none transition-colors">In Progress</button>
                     </div>
+                </div>
+
+                <div class="h-px bg-amber-500/10"></div>
+
+                <div>
+                    <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-b border-amber-500/20 pb-3 mb-4">Global VIP Rankings</p>
+                    <div id="vip-leaderboard" class="space-y-2">
+                        </div>
                 </div>
 
             </div>
@@ -206,12 +225,12 @@
 
         <div id="three-container">
             <div class="hud-top-center vip-glass px-10 py-5 flex items-center gap-12 shadow-2xl border-amber-500/20">
-                 <button onclick="prevCar()" class="text-amber-500 text-2xl hover:scale-125 transition-transform">◀</button>
+                 <button onclick="prevCar()" class="text-amber-500 text-3xl p-4 hover:scale-125 transition-transform">◀</button>
                  <div class="text-center min-w-[180px]">
                      <p id="car-name" class="text-xs font-black text-white uppercase tracking-[0.3em] italic">---</p>
                      <p class="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-1">Master-Tier Asset</p>
                  </div>
-                 <button onclick="nextCar()" class="text-amber-500 text-2xl hover:scale-125 transition-transform">▶</button>
+                 <button onclick="nextCar()" class="text-amber-500 text-3xl p-4 hover:scale-125 transition-transform">▶</button>
             </div>
             <div id="float-container"></div>
         </div>
@@ -244,19 +263,20 @@
             if (navigator.vibrate) navigator.vibrate(duration);
         }
 
+        // MOBILE OPTIMIZED PARTICLES (Max 25 for solid 60fps)
         function spawnParticles() {
-            for(let i=0; i<40; i++) {
+            for(let i=0; i<25; i++) {
                 let p = document.createElement('div');
                 p.style.position = 'fixed';
                 p.style.left = '50%'; p.style.top = '50%';
-                p.style.width = '10px'; p.style.height = '10px';
+                p.style.width = '8px'; p.style.height = '8px';
                 p.style.backgroundColor = ['#fbbf24', '#4ade80', '#22d3ee', '#a855f7'][Math.floor(Math.random()*4)];
                 p.style.borderRadius = '50%';
                 p.style.pointerEvents = 'none';
                 p.style.zIndex = '9999';
-                p.style.boxShadow = `0 0 10px ${p.style.backgroundColor}`;
+                p.style.boxShadow = `0 0 8px ${p.style.backgroundColor}`;
                 let angle = Math.random() * Math.PI * 2;
-                let speed = Math.random() * 150 + 50;
+                let speed = Math.random() * 120 + 40;
                 let dx = Math.cos(angle) * speed;
                 let dy = Math.sin(angle) * speed;
                 p.animate([
@@ -286,7 +306,7 @@
 
         function loadGame() {
             try {
-                const savedState = localStorage.getItem('aevith_tycoon_save_v2');
+                const savedState = localStorage.getItem('dan_tycoon_save_v2');
                 if (savedState) {
                     state = JSON.parse(savedState);
                 } else {
@@ -296,9 +316,11 @@
                 state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
             }
 
-            // Ensure VIP Perks & Missions exist in save
+            // Ensure VIP Perks, Missions, and Streaks exist in save
             if (!state.vipPerks) state.vipPerks = { income2x: false, autoDetail: false };
             if (!state.vipMissions) state.vipMissions = { m1: false, m2: false };
+            if (typeof state.vipStreak === 'undefined') state.vipStreak = 0;
+            if (typeof state.lastVipClaim === 'undefined') state.lastVipClaim = null;
 
             const vipCars = [
                 { name: "Bouvetti Centurion", filename: "bug.glb", finish: "Standard", buyPrice: 50000000 },
@@ -349,6 +371,38 @@
             }, 16);
         }
 
+        // --- NEW: VIP DAILY REWARD LOGIC ---
+        function claimVipDaily() {
+            triggerHaptic(40);
+            const now = Date.now();
+            const msInDay = 24 * 60 * 60 * 1000;
+
+            if (!state.lastVipClaim || now - state.lastVipClaim > msInDay) {
+                // If they missed more than 48 hours, streak resets to 1. Otherwise, adds 1.
+                if (state.lastVipClaim && now - state.lastVipClaim > msInDay * 2) {
+                    state.vipStreak = 1;
+                } else {
+                    state.vipStreak++;
+                }
+
+                state.lastVipClaim = now;
+                sfxSuccess(); spawnParticles();
+
+                // Day 3 Bonus Logic
+                if (state.vipStreak % 3 === 0) {
+                    state.diamonds += 100;
+                    triggerFloat("DAY 3: +100💎 SECURED", "#22d3ee");
+                } else {
+                    state.money += 10000000; // 1 Crore
+                    triggerFloat("+₹1 CR CLAIMED", "#4ade80");
+                }
+
+                updateUI(); saveGame();
+            } else {
+                sfxError(); triggerFloat("AVAILABLE TOMORROW", "#ef4444");
+            }
+        }
+
         // --- VIP PERKS & MISSIONS LOGIC ---
         function buyPerk(type) {
             triggerHaptic(30);
@@ -357,7 +411,7 @@
                 if (state.money >= 100000000) {
                     sfxSuccess(); spawnParticles();
                     state.money -= 100000000;
-                    state.globalMult += 1.0; // Adds 100% boost to main game sales
+                    state.globalMult += 1.0;
                     state.vipPerks.income2x = true;
                     triggerFloat("2X REVENUE SECURED", "#fbbf24");
                 } else { sfxError(); triggerFloat("NEED ₹10 CR", "#ef4444"); }
@@ -389,9 +443,44 @@
             updateUI(); saveGame();
         }
 
+        // --- NEW: LEADERBOARD LOGIC ---
+        function renderVipLeaderboard() {
+            const list = document.getElementById('vip-leaderboard');
+            if (!list) return;
+
+            // Calculate a net worth score
+            const myNetWorth = state.money + (state.diamonds * 1000000);
+            const rivals = [
+                { name: "Sheikh Al-Maktoum", wealth: 1500000000 },
+                { name: "Monaco Syndicate", wealth: 800000000 },
+                { name: "Silicon Baron", wealth: 450000000 },
+                { name: "YOU (DA)", wealth: myNetWorth, isMe: true }
+            ].sort((a,b) => b.wealth - a.wealth);
+
+            list.innerHTML = rivals.slice(0,4).map((r, i) => `
+                <div class="flex justify-between items-center p-3 bg-black/40 rounded-lg border ${r.isMe ? 'border-amber-500/50' : 'border-white/5'}">
+                    <span class="text-[9px] font-bold text-slate-500 w-4">#${i+1}</span>
+                    <span class="text-[9px] font-black ${r.isMe ? 'text-amber-400' : 'text-white'} uppercase flex-1">${r.name}</span>
+                    <span class="text-[9px] font-bold text-green-400">${formatMoney(r.wealth)}</span>
+                </div>
+            `).join('');
+        }
+
         function updateUI() {
             document.getElementById('vip-money').innerText = formatMoney(state.money);
             document.getElementById('vip-diamonds').innerText = state.diamonds.toLocaleString();
+
+            // Update Daily Drop UI
+            const btnDaily = document.getElementById('btn-vip-daily');
+            document.getElementById('streak-count').innerText = `Streak: ${state.vipStreak}`;
+            const msInDay = 24 * 60 * 60 * 1000;
+            if (state.lastVipClaim && Date.now() - state.lastVipClaim < msInDay) {
+                btnDaily.innerText = "CLAIMED TODAY";
+                btnDaily.className = "w-full py-3 bg-amber-900/30 text-[9px] font-black text-amber-500/50 rounded-lg uppercase pointer-events-none";
+            } else {
+                btnDaily.innerText = "CLAIM REWARD";
+                btnDaily.className = "w-full py-3 bg-amber-500 text-[9px] font-black text-black rounded-lg uppercase transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-[1.02] active:scale-95";
+            }
 
             // Update Perks UI
             const btn2x = document.getElementById('btn-perk-2x');
@@ -411,10 +500,10 @@
             const btnM1 = document.getElementById('btn-m1');
             if (state.vipMissions.m1) {
                 btnM1.innerText = "COMPLETED";
-                btnM1.className = "w-full py-2.5 bg-green-900/30 text-[8px] font-black text-green-500 rounded-lg uppercase pointer-events-none";
+                btnM1.className = "w-full py-3 bg-green-900/30 text-[9px] font-black text-green-500 rounded-lg uppercase pointer-events-none";
             } else if (m1Pct >= 100) {
                 btnM1.innerText = "CLAIM REWARD (50💎)";
-                btnM1.className = "w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-[8px] font-black text-black rounded-lg uppercase cursor-pointer transition-colors shadow-[0_0_15px_rgba(245,158,11,0.4)]";
+                btnM1.className = "w-full py-3 bg-amber-500 hover:bg-amber-400 text-[9px] font-black text-black rounded-lg uppercase cursor-pointer transition-colors shadow-[0_0_15px_rgba(245,158,11,0.4)]";
                 btnM1.style.pointerEvents = 'auto';
             }
 
@@ -427,12 +516,14 @@
             const btnM2 = document.getElementById('btn-m2');
             if (state.vipMissions.m2) {
                 btnM2.innerText = "COMPLETED";
-                btnM2.className = "w-full py-2.5 bg-green-900/30 text-[8px] font-black text-green-500 rounded-lg uppercase pointer-events-none";
+                btnM2.className = "w-full py-3 bg-green-900/30 text-[9px] font-black text-green-500 rounded-lg uppercase pointer-events-none";
             } else if (m2Pct >= 100) {
                 btnM2.innerText = "CLAIM REWARD (₹5 CR)";
-                btnM2.className = "w-full py-2.5 bg-green-500 hover:bg-green-400 text-[8px] font-black text-black rounded-lg uppercase cursor-pointer transition-colors shadow-[0_0_15px_rgba(34,197,94,0.4)]";
+                btnM2.className = "w-full py-3 bg-green-500 hover:bg-green-400 text-[9px] font-black text-black rounded-lg uppercase cursor-pointer transition-colors shadow-[0_0_15px_rgba(34,197,94,0.4)]";
                 btnM2.style.pointerEvents = 'auto';
             }
+
+            renderVipLeaderboard();
         }
 
         // --- 3D ENGINE ---
