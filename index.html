@@ -132,10 +132,12 @@
         @keyframes pulse-ring-blue { 0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(34, 211, 238, 0); } }
         @keyframes pulse-ring-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } }
         @keyframes pulse-ring-green { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(74, 222, 128, 0); } }
+        @keyframes pulse-ring-amber { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 100% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); } }
 
         .tutorial-pulse-blue { animation: pulse-ring-blue 1s infinite; border-color: #22d3ee !important; position: relative; z-index: 50; }
         .tutorial-pulse-red { animation: pulse-ring-red 1s infinite; border-color: #ef4444 !important; position: relative; z-index: 50; }
         .tutorial-pulse-green { animation: pulse-ring-green 1s infinite; border-color: #4ade80 !important; position: relative; z-index: 50; }
+        .tutorial-pulse-amber { animation: pulse-ring-amber 1s infinite; position: relative; z-index: 50; }
 
         #camera-flash {
             position: fixed; inset: 0; background: white;
@@ -170,6 +172,16 @@
             backdrop-filter: blur(10px);
         }
 
+        /* AUTO SAVE INDICATOR */
+        #save-indicator {
+            position: fixed; top: 20px; right: 20px; z-index: 5000;
+            background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5);
+            color: #4ade80; font-size: 10px; font-weight: 900; padding: 4px 10px;
+            border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+
         @media (max-width: 1024px) { #main-container { grid-template-columns: 240px 1fr 75px; } }
         @media (max-width: 768px) {
             #main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; overflow-y: auto; padding-bottom: 120px; }
@@ -180,6 +192,8 @@
 <body>
 
     <audio id="bg-music" src="song.mp3" loop></audio>
+
+    <div id="save-indicator">💾 Saved</div>
 
     <div class="goal-bar"><div id="goal-fill" class="goal-fill" style="width: 5%"></div></div>
 
@@ -314,6 +328,8 @@
             <div id="three-container" class="flex-1 min-h-0"></div>
             <div id="float-container" class="absolute inset-0 pointer-events-none"></div>
 
+            <p class="absolute bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold text-white/40 uppercase tracking-widest pointer-events-none z-10 animate-pulse">👆 Swipe to Rotate</p>
+
             <div class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/50 backdrop-blur px-4 py-2 rounded-full border border-white/10 z-20 shadow-2xl">
                 <button onclick="prevInventoryCar()" class="text-sm text-slate-400 hover:text-white transition-colors">◀</button>
                 <div class="flex flex-col items-center min-w-[100px]">
@@ -323,12 +339,12 @@
                 <button onclick="nextInventoryCar()" class="text-sm text-slate-400 hover:text-white transition-colors">▶</button>
             </div>
 
-            <button onclick="window.location.href='vip.html'" class="absolute top-8 right-8 z-30 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.5)] border border-amber-300/50 hover:scale-105 transition-transform">
+            <button onclick="window.location.href='vip.html'" class="absolute top-8 right-8 z-30 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black uppercase rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.5)] hover:scale-105 transition-transform">
                 VIP Vault 👑
             </button>
 
             <div class="pt-4 px-4 pb-8 relative z-10 bg-gradient-to-t from-black to-transparent">
-                <p id="market-tutorial-text" class="text-[10px] text-cyan-400 font-black uppercase mb-2 text-center hidden">👇 Buy your first car to start! 👇</p>
+                <p id="market-tutorial-text" class="text-[10px] text-cyan-400 font-black uppercase mb-2 text-center hidden animate-pulse">👇 Buy your first car to start! 👇</p>
                 <div id="market-list" class="flex gap-4 overflow-x-auto no-scrollbar pb-2"></div>
             </div>
         </div>
@@ -416,7 +432,7 @@
     </div>
 
     <script>
-        // --- 1. GAME JUICE: ZERO-BYTE SYNTHESIZER SFX ---
+        // --- 1. GAME JUICE: ZERO-BYTE SYNTHESIZER SFX & PARTICLES ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playTone(freq, type, duration, vol) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -434,32 +450,18 @@
         function sfxClick() { playTone(600, 'sine', 0.1, 0.05); }
         function sfxCash() { playTone(1200, 'square', 0.1, 0.05); setTimeout(()=>playTone(1600, 'square', 0.2, 0.05), 100); }
         function sfxError() { playTone(200, 'sawtooth', 0.2, 0.05); }
-        function sfxSuccess() {
-            playTone(400, 'sine', 0.1, 0.05);
-            setTimeout(()=>playTone(600, 'sine', 0.1, 0.05), 100);
-            setTimeout(()=>playTone(1000, 'sine', 0.3, 0.05), 200);
-        }
+        function sfxSuccess() { playTone(400, 'sine', 0.1, 0.05); setTimeout(()=>playTone(600, 'sine', 0.1, 0.05), 100); setTimeout(()=>playTone(1000, 'sine', 0.3, 0.05), 200); }
 
-        // --- VIP PARTICLE SYSTEM PORTED FOR MAIN PAGE ---
         function spawnParticles() {
             for(let i=0; i<25; i++) {
                 let p = document.createElement('div');
-                p.style.position = 'fixed';
-                p.style.left = '50%'; p.style.top = '50%';
+                p.style.position = 'fixed'; p.style.left = '50%'; p.style.top = '50%';
                 p.style.width = '8px'; p.style.height = '8px';
                 p.style.backgroundColor = ['#fbbf24', '#4ade80', '#22d3ee', '#a855f7'][Math.floor(Math.random()*4)];
-                p.style.borderRadius = '50%';
-                p.style.pointerEvents = 'none';
-                p.style.zIndex = '9999';
-                p.style.boxShadow = `0 0 8px ${p.style.backgroundColor}`;
-                let angle = Math.random() * Math.PI * 2;
-                let speed = Math.random() * 120 + 40;
-                let dx = Math.cos(angle) * speed;
-                let dy = Math.sin(angle) * speed;
-                p.animate([
-                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
-                    { transform: `translate(${dx}px, ${dy}px) scale(0)`, opacity: 0 }
-                ], { duration: 1000, easing: 'cubic-bezier(.25,.8,.25,1)' });
+                p.style.borderRadius = '50%'; p.style.pointerEvents = 'none'; p.style.zIndex = '9999';
+                let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 120 + 40;
+                let dx = Math.cos(angle) * speed; let dy = Math.sin(angle) * speed;
+                p.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) scale(0)`, opacity: 0 }], { duration: 1000, easing: 'cubic-bezier(.25,.8,.25,1)' });
                 document.body.appendChild(p);
                 setTimeout(() => p.remove(), 1000);
             }
@@ -478,39 +480,23 @@
         let audioStarted = false;
 
         if (typeof PokiSDK !== 'undefined') {
-            PokiSDK.init().then(() => {
-                console.log("Poki SDK successfully initialized");
-                PokiSDK.gameLoadingStart();
-            }).catch(() => {
-                console.log("Initialized, but adblock is likely enabled.");
-            });
+            PokiSDK.init().then(() => { PokiSDK.gameLoadingStart(); }).catch(() => { console.log("Adblock enabled."); });
         }
 
         document.body.addEventListener('click', () => {
             if (!audioStarted) {
                 if(audioCtx.state === 'suspended') audioCtx.resume();
                 const bgMusic = document.getElementById('bg-music');
-                if (bgMusic) {
-                    bgMusic.volume = 0.4;
-                    bgMusic.play().catch(e => console.log("Audio play blocked by browser."));
-                    audioStarted = true;
-                }
+                if (bgMusic) { bgMusic.volume = 0.4; bgMusic.play().catch(e=>e); audioStarted = true; }
             }
         }, { once: true });
 
-        function triggerHaptic(duration = 30) {
-            if (navigator.vibrate) {
-                navigator.vibrate(duration);
-            }
-        }
-
+        function triggerHaptic(duration = 30) { if (navigator.vibrate) navigator.vibrate(duration); }
         function formatMoney(n) { return "₹" + Math.floor(n).toLocaleString('en-IN'); }
-
         function triggerFloat(txt, color) {
             const el = document.createElement('div'); el.className = 'float-info'; el.innerText = txt; el.style.color = color;
             el.style.left = '50%'; el.style.top = '40%';
-            const fCont = document.getElementById('float-container');
-            if (fCont) fCont.appendChild(el);
+            document.getElementById('float-container').appendChild(el);
             setTimeout(() => { if(el && el.parentNode) el.parentNode.removeChild(el); }, 1500);
         }
 
@@ -558,9 +544,7 @@
                 scene.add(garageModelGlobal);
 
                 if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
-
             }, undefined, (err) => {
-                console.log("Garage model not found yet.");
                 if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
             });
 
@@ -870,6 +854,46 @@
                 auction: { ...state.auction, interval: null }
             };
             localStorage.setItem('aevith_tycoon_save_v2', JSON.stringify(stateToSave));
+
+            // EXPLICIT SAVE INDICATOR FOR QA TESTERS
+            const ind = document.getElementById('save-indicator');
+            if(ind) {
+                ind.style.opacity = '1';
+                setTimeout(() => ind.style.opacity = '0', 1000);
+            }
+        }
+
+        // --- NEW: REWARDED AD CAR UNLOCK HOOK (THE BRUCE WAYNE HOOK) ---
+        function unlockAdCar() {
+            triggerHaptic(20);
+            sfxClick();
+            if (typeof PokiSDK !== 'undefined') {
+                if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
+                PokiSDK.rewardedBreak().then((success) => {
+                    if(success) {
+                        sfxSuccess();
+                        spawnParticles();
+                        state.ownedCars.push({ name: "Vigilante Phantom", filename: 'bat1.glb', buyPrice: 25000000, color: "#111111", trim: "#000000", engine: 3, isRare: true, baseHP: 900, finish: 'Matte', garageX: 0, garageZ: 0, condition: 100 });
+                        state.currentCarIndex = state.ownedCars.length - 1;
+                        state.condition = 100;
+                        triggerFloat("VIGILANTE UNLOCKED!", "#fbbf24");
+                        updateUI();
+                    } else {
+                        sfxError();
+                        triggerFloat("AD CANCELLED", "#ef4444");
+                    }
+                    if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
+                });
+            } else {
+                // Fallback for local testing
+                sfxSuccess();
+                spawnParticles();
+                state.ownedCars.push({ name: "Vigilante Phantom", filename: 'bat1.glb', buyPrice: 25000000, color: "#111111", trim: "#000000", engine: 3, isRare: true, baseHP: 900, finish: 'Matte', garageX: 0, garageZ: 0, condition: 100 });
+                state.currentCarIndex = state.ownedCars.length - 1;
+                state.condition = 100;
+                triggerFloat("TEST: VIGILANTE UNLOCKED!", "#fbbf24");
+                updateUI();
+            }
         }
 
         // --- UI RENDER FUNCTIONS & INTERACTIVE TUTORIAL ---
@@ -901,7 +925,6 @@
             // Step 3: Sell It
             else if (state.ownedCars.length === 1 && state.condition === 100) {
                 if (!state.currentCustomer) {
-                    // Force a customer to spawn instantly for the tutorial
                     checkArrival();
                 } else if (acceptBtn) {
                     acceptBtn.classList.add('tutorial-pulse-green');
@@ -918,7 +941,18 @@
 
         function renderMarket() {
             const list = document.getElementById('market-list'); if (!list) return;
-            list.innerHTML = state.inventory.map(car => `<div onclick="buyCar('${car.name}')" class="min-w-[190px] h-[85px] glass-panel p-4 cursor-pointer hover:border-white/40 transition-all shadow-xl"><p class="text-[9px] font-black uppercase text-slate-400">${car.name}</p><p class="text-[11px] text-cyan-400 font-bold mt-1">${formatMoney(car.buyPrice)}</p></div>`).join('');
+            let html = state.inventory.map(car => `<div onclick="buyCar('${car.name}')" class="min-w-[190px] h-[85px] glass-panel p-4 cursor-pointer hover:border-white/40 transition-all shadow-xl"><p class="text-[9px] font-black uppercase text-slate-400">${car.name}</p><p class="text-[11px] text-cyan-400 font-bold mt-1">${formatMoney(car.buyPrice)}</p></div>`).join('');
+
+            // THE BRUCE WAYNE AD HOOK
+            if (!state.ownedCars.some(c => c.name === "Vigilante Phantom")) {
+                html += `<div onclick="unlockAdCar()" class="min-w-[190px] h-[85px] glass-panel p-4 cursor-pointer border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:scale-105 transition-all relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-12 h-12 bg-amber-500 rotate-45 flex items-end justify-center pb-1"><span class="text-[6px] font-black text-black -rotate-45">AD</span></div>
+                    <p class="text-[9px] font-black uppercase text-amber-400">Vigilante Phantom</p>
+                    <p class="text-[10px] text-white font-bold mt-1 flex items-center gap-1">▶ WATCH AD TO UNLOCK</p>
+                </div>`;
+            }
+
+            list.innerHTML = html;
         }
 
         function renderSales() {
@@ -1037,7 +1071,7 @@
             triggerHaptic(20);
             const b = state.branches[i];
             if (state.money >= b.cost && state.brandRep >= b.reqRep && !b.owned) {
-                sfxSuccess(); spawnParticles();
+                sfxCash();
                 state.money -= b.cost; b.owned = true; state.globalMult += b.bonus;
                 triggerFloat("NEW BRANCH OPENED!", "#a855f7"); updateUI();
             } else { sfxError(); triggerFloat("NOT ELIGIBLE", "#ef4444"); }
