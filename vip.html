@@ -237,7 +237,6 @@
     </div>
 
     <script>
-        // --- SFX & HAPTICS ENGINE ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playTone(freq, type, duration, vol) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -263,7 +262,6 @@
             if (navigator.vibrate) navigator.vibrate(duration);
         }
 
-        // MOBILE OPTIMIZED PARTICLES (Max 25 for solid 60fps)
         function spawnParticles() {
             for(let i=0; i<25; i++) {
                 let p = document.createElement('div');
@@ -301,12 +299,11 @@
             }
         }
 
-        // --- GLOBAL SAVE SYSTEM INTEGRATION ---
         let state = {};
 
         function loadGame() {
             try {
-                const savedState = localStorage.getItem('dan_tycoon_save_v2');
+                const savedState = localStorage.getItem('aevith_tycoon_save_v2');
                 if (savedState) {
                     state = JSON.parse(savedState);
                 } else {
@@ -316,7 +313,6 @@
                 state = { money: 0, diamonds: 0, currentCarIndex: 0, ownedCars: [] };
             }
 
-            // Ensure VIP Perks, Missions, and Streaks exist in save
             if (!state.vipPerks) state.vipPerks = { income2x: false, autoDetail: false };
             if (!state.vipMissions) state.vipMissions = { m1: false, m2: false };
             if (typeof state.vipStreak === 'undefined') state.vipStreak = 0;
@@ -371,14 +367,12 @@
             }, 16);
         }
 
-        // --- NEW: VIP DAILY REWARD LOGIC ---
         function claimVipDaily() {
             triggerHaptic(40);
             const now = Date.now();
             const msInDay = 24 * 60 * 60 * 1000;
 
             if (!state.lastVipClaim || now - state.lastVipClaim > msInDay) {
-                // If they missed more than 48 hours, streak resets to 1. Otherwise, adds 1.
                 if (state.lastVipClaim && now - state.lastVipClaim > msInDay * 2) {
                     state.vipStreak = 1;
                 } else {
@@ -388,12 +382,11 @@
                 state.lastVipClaim = now;
                 sfxSuccess(); spawnParticles();
 
-                // Day 3 Bonus Logic
                 if (state.vipStreak % 3 === 0) {
                     state.diamonds += 100;
                     triggerFloat("DAY 3: +100💎 SECURED", "#22d3ee");
                 } else {
-                    state.money += 10000000; // 1 Crore
+                    state.money += 10000000;
                     triggerFloat("+₹1 CR CLAIMED", "#4ade80");
                 }
 
@@ -403,7 +396,6 @@
             }
         }
 
-        // --- VIP PERKS & MISSIONS LOGIC ---
         function buyPerk(type) {
             triggerHaptic(30);
             if (type === '2x') {
@@ -443,12 +435,10 @@
             updateUI(); saveGame();
         }
 
-        // --- NEW: LEADERBOARD LOGIC ---
         function renderVipLeaderboard() {
             const list = document.getElementById('vip-leaderboard');
             if (!list) return;
 
-            // Calculate a net worth score
             const myNetWorth = state.money + (state.diamonds * 1000000);
             const rivals = [
                 { name: "Sheikh Al-Maktoum", wealth: 1500000000 },
@@ -470,7 +460,6 @@
             document.getElementById('vip-money').innerText = formatMoney(state.money);
             document.getElementById('vip-diamonds').innerText = state.diamonds.toLocaleString();
 
-            // Update Daily Drop UI
             const btnDaily = document.getElementById('btn-vip-daily');
             document.getElementById('streak-count').innerText = `Streak: ${state.vipStreak}`;
             const msInDay = 24 * 60 * 60 * 1000;
@@ -482,7 +471,6 @@
                 btnDaily.className = "w-full py-3 bg-amber-500 text-[9px] font-black text-black rounded-lg uppercase transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-[1.02] active:scale-95";
             }
 
-            // Update Perks UI
             const btn2x = document.getElementById('btn-perk-2x');
             if (state.vipPerks.income2x) {
                 btn2x.innerHTML = "<span>OWNED: 2X REVENUE</span>";
@@ -494,7 +482,6 @@
                 btnAuto.className = "w-full py-4 bg-cyan-900/10 border border-cyan-500/20 rounded-xl text-[9px] font-black text-cyan-500 uppercase opacity-50 cursor-not-allowed";
             }
 
-            // Update Mission 1 (10 Crore Balance)
             let m1Pct = Math.min(100, (state.money / 100000000) * 100);
             document.getElementById('m1-progress').style.width = m1Pct + '%';
             const btnM1 = document.getElementById('btn-m1');
@@ -507,7 +494,6 @@
                 btnM1.style.pointerEvents = 'auto';
             }
 
-            // Update Mission 2 (Own 5 VIP Cars)
             const vipNames = ["Bouvetti Centurion", "Pegasus Zephyr", "Torino Rebelto", "Stuttgart 99-GT", "Ashton Vanguard", "Chevromet Corlet", "Tissan 350Z", "Topta Supra", "Kitubshi Eclipse", "Chinside Maxda", "Maxda 1993", "Vigilante Night-Rider", "Aura Sielle"];
             let vipCount = 0;
             state.ownedCars.forEach(c => { if(vipNames.includes(c.name)) vipCount++; });
@@ -526,7 +512,6 @@
             renderVipLeaderboard();
         }
 
-        // --- 3D ENGINE ---
         let scene, camera, renderer, controls, currentModel, currentFile = "", loader;
 
         function init3D() {
@@ -611,15 +596,43 @@
         function updateMaterials() {
             if (!currentModel) return;
             const finish = state.ownedCars[state.currentCarIndex].finish;
+
+            // Automatically select a luxury paint color based on the car index
+            const luxuryColors = [0x990000, 0x0a0a0a, 0x002266, 0xd4af37, 0xeeeeee, 0xcc4400, 0x113311];
+            const baseColor = luxuryColors[state.currentCarIndex % luxuryColors.length];
+
             currentModel.traverse(n => {
                 if (n.isMesh && n.material) {
-                    if (finish === 'Gold') {
-                        n.material.color.setHex(0xffd700);
+                    const name = (n.name || "").toLowerCase();
+                    const matName = (n.material.name || "").toLowerCase();
+
+                    // 1. HIDE ALL 3D BADGES (Added extra protection)
+                    const badgeTerms = ['logo', 'badge', 'emblem', 'crest', 'symbol', 'decal', 'sticker', 'ornament', 'plate', 'license', 'ferrari', 'lambo', 'bugatti', 'porsche', 'cadillac', 'chevrolet', 'supra', 'aston', 'martin', 'rossolini', 'msa', 'text', 'brand'];
+                    if (badgeTerms.some(term => name.includes(term) || matName.includes(term))) {
+                        n.visible = false; return;
+                    }
+
+                    // 2. TEXTURE WIPE: NUKE ALL COPYRIGHTED IMAGES FROM THE BODY (BUT PROTECT SHADOW PLANES)
+                    const isProtected = name.includes('glass') || name.includes('window') || name.includes('tire') || name.includes('wheel') || name.includes('shadow') || name.includes('plane') || name.includes('ground') || matName.includes('glass') || matName.includes('tire') || matName.includes('shadow');
+
+                    if (!isProtected && n.material.map) {
+                        n.material.map = null; // Destroys the image wrapper
+                        n.material.needsUpdate = true;
+                    }
+
+                    // 3. APPLY VIP FINISHES AND LUXURY PAINT
+                    if (finish === 'Gold' && !isProtected) {
+                        n.material.color?.setHex(0xffd700);
                         n.material.metalness = 1.0;
                         n.material.roughness = 0.05;
-                    } else if (finish === 'Carbon') {
-                        n.material.color.setHex(0x111111);
+                    } else if (finish === 'Carbon' && !isProtected) {
+                        n.material.color?.setHex(0x111111);
                         n.material.metalness = 0.8;
+                        n.material.roughness = 0.2;
+                    } else if (!isProtected) {
+                        // Apply the new luxury base color to replace the gray
+                        n.material.color?.setHex(baseColor);
+                        n.material.metalness = 0.7;
                         n.material.roughness = 0.2;
                     }
                 }
@@ -655,7 +668,6 @@
             init3D();
             updateUI();
 
-            // Core background progression loop for VIP Perks
             setInterval(() => {
                 if (state.vipPerks && state.vipPerks.autoDetail) {
                     let repaired = false;
