@@ -708,7 +708,6 @@
             const finish = currentCar ? (currentCar.finish || 'Standard') : 'Standard';
             const carName = currentCar ? currentCar.name : "";
 
-            // Check if we are in vip.html
             const isVipVault = document.getElementById('vip-money') !== null;
             const luxuryColors = [0x990000, 0x0a0a0a, 0x002266, 0xd4af37, 0xeeeeee, 0xcc4400, 0x113311];
             const baseColor = isVipVault ? luxuryColors[state.currentCarIndex % luxuryColors.length] : color;
@@ -718,14 +717,12 @@
                     const name = (n.name || "").toLowerCase();
                     const matName = (n.material.name || "").toLowerCase();
 
-                    // 1. HIDE ALL GENERIC 3D BADGES
                     const badgeTerms = ['logo', 'badge', 'emblem', 'crest', 'symbol', 'decal', 'sticker', 'ornament', 'plate', 'license', 'ferrari', 'lambo', 'bugatti', 'porsche', 'cadillac', 'chevrolet', 'supra', 'aston', 'martin', 'rossolini', 'msa', 'text', 'brand', 'caspra', 'castra', 'castpia', 'watermark'];
                     if (badgeTerms.some(term => name.includes(term) || matName.includes(term))) {
                         n.visible = false;
                         return;
                     }
 
-                    // 2. THE COORDINATE INVISIBILITY CLOAK (ONLY FOR MERCEDES & AUDI)
                     if (carName === "Meister C-Line") {
                         n.geometry.computeBoundingBox();
                         const box = n.geometry.boundingBox;
@@ -750,26 +747,25 @@
                         }
                     }
 
-                    // 3. PROTECT CRITICAL PARTS
                     const isProtected = ['glass', 'window', 'windshield', 'shadow', 'plane', 'ground', 'rim', 'alloy', 'wheel', 'tire', 'rubber', 'brake', 'disc'].some(term => name.includes(term) || matName.includes(term));
                     if (isProtected) {
                         return;
                     }
 
-                    // 4. TEXTURE WIPE FOR EVERYTHING ELSE
-                    if (n.material.map) {
+                    // --- OVERRIDE: Prevent the clay bug by saving the texture map for this specific model ---
+                    const isClayBugModel = (carName === "Meister C-Line");
+
+                    if (n.material.map && !isClayBugModel) {
                         n.material.map = null;
                         n.material.needsUpdate = true;
                     }
 
-                    // 5. RETAIN LIGHTS
                     if (['backlight', 'tail', 'light', 'lamp'].some(term => name.includes(term) || matName.includes(term))) {
                         n.material.color?.set(0xff0000);
                         if (n.material.emissive) { n.material.emissive.set(0xff0000); n.material.emissiveIntensity = 3; }
                         return;
                     }
 
-                    // 6. APPLY TRIM
                     const isTrim = ['trim', 'leather', 'seat', 'interior', 'dash', 'steering'].some(term => name.includes(term) || matName.includes(term));
                     if (isTrim) {
                         n.material.color?.set(trim || "#111111");
@@ -777,10 +773,12 @@
                         return;
                     }
 
-                    // 7. APPLY BODY PAINT
                     const isBodyPart = ['body', 'paint', 'shell', 'exterior', 'car', 'main'].some(term => name.includes(term) || matName.includes(term));
 
-                    if (typeof baseColor === 'string') {
+                    // --- OVERRIDE: Ensure the original textures aren't tinted solid pink ---
+                    if (isClayBugModel) {
+                        n.material.color?.setHex(0xffffff);
+                    } else if (typeof baseColor === 'string') {
                         n.material.color?.set(baseColor);
                     } else {
                         n.material.color?.setHex(baseColor);
