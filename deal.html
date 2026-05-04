@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- Necessary for Zoom/Rotate/Move -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
         body {
@@ -17,15 +20,27 @@
         .glass-card { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
         .chat-msg { animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fullscreen styles */
+        #fleet-viewport:fullscreen { width: 100vw; height: 100vh; background: black; }
+        #fullscreen-btn { transition: 0.2s; filter: invert(1) brightness(2); }
+        #fullscreen-btn:hover { transform: scale(1.1); }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- HEADER -->
     <div class="max-w-7xl mx-auto flex justify-between items-start mb-8">
-        <div>
-            <h1 class="text-4xl font-black uppercase italic tracking-tighter text-white">Global <span class="text-purple-500">Operations</span></h1>
-            <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Aevith Labs International Division</p>
+        <div class="flex items-center gap-4">
+            <!-- RETURN BUTTON -->
+            <button onclick="window.location.href='buy.html'" class="bg-white/10 hover:bg-white/20 p-3 rounded-full border border-white/20 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </button>
+            <div>
+                <h1 class="text-4xl font-black uppercase italic tracking-tighter text-white">Global <span class="text-purple-500">Operations</span></h1>
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Aevith Labs International Division</p>
+            </div>
         </div>
         <div class="bg-black/60 p-4 rounded-xl border border-purple-500/30">
             <p class="text-[9px] text-slate-500 font-black uppercase">Capital</p>
@@ -34,19 +49,21 @@
     </div>
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-        <!-- SIDEBAR: 3D FLEET & MAINTENANCE -->
         <div class="lg:col-span-1 space-y-6">
             <div class="glass-card p-6 rounded-3xl neon-border">
                 <h3 class="text-xs font-black uppercase text-purple-400 mb-4">Strategic Fleet</h3>
 
-                <!-- 3D VIEWPORT -->
                 <div id="fleet-viewport" class="w-full h-48 bg-black/40 rounded-2xl mb-4 border border-purple-500/20 relative overflow-hidden">
                     <canvas id="fleet-canvas"></canvas>
+
+                    <!-- FULLSCREEN LOGO IMPLEMENTATION -->
+                    <button onclick="toggleFullscreen()" class="absolute top-3 right-3 z-50">
+                        <img id="fullscreen-btn" src="https://i.ibb.co/Lz00XkH/fullscreen-icon.png" alt="Fullscreen" class="w-5 h-5 opacity-70 hover:opacity-100">
+                    </button>
+
                     <div id="model-label" class="absolute bottom-2 left-2 text-[10px] font-black uppercase text-purple-400">Select Asset</div>
                 </div>
 
-                <!-- MAINTENANCE -->
                 <div id="maintenance-menu" class="hidden space-y-2 mb-4">
                     <div class="flex justify-between gap-2">
                         <button onclick="maintain('fuel')" class="flex-1 bg-white/5 border border-white/10 py-2 rounded-lg text-[9px] font-bold hover:bg-purple-500/20">⛽ REFUEL (₹50K)</button>
@@ -57,25 +74,31 @@
                 <div class="space-y-2">
                     <button onclick="previewAsset('svj')" id="btn-svj-view" class="w-full p-3 bg-purple-600 rounded-xl font-black text-[10px] uppercase hidden">Inspect Aevith SVJ</button>
                     <button onclick="previewAsset('jet')" id="btn-jet-view" class="w-full p-3 bg-purple-600 rounded-xl font-black text-[10px] uppercase hidden">Inspect Sky-Jet</button>
+                    <button onclick="previewAsset('yacht')" id="btn-yacht-view" class="w-full p-3 bg-blue-600 rounded-xl font-black text-[10px] uppercase hidden">Inspect Aevith Yacht</button>
+                    <button onclick="previewAsset('superyacht')" id="btn-superyacht-view" class="w-full p-3 bg-cyan-600 rounded-xl font-black text-[10px] uppercase hidden">Inspect Horizon-X Yacht</button>
+
                     <p id="no-assets" class="text-[9px] text-slate-500 italic text-center">Acquire assets in the Executive Vault to view here.</p>
                 </div>
             </div>
         </div>
 
-        <!-- MAIN: AI NEGOTIATION CHAT -->
         <div class="lg:col-span-3 glass-card rounded-[2rem] flex flex-col h-[650px] border border-white/10 relative overflow-hidden">
             <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
                 <div class="flex items-center gap-3">
                     <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     <h3 class="text-sm font-black uppercase tracking-widest text-white">Investment Meeting: <span id="location-name" class="text-purple-400">Chennai HQ</span></h3>
                 </div>
-                <button onclick="giftWatch()" id="btn-gift" class="text-[10px] bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-full font-black uppercase hover:bg-amber-500 hover:text-black transition-all">Gift Moonphase Watch</button>
+                <div class="flex gap-2">
+                    <!-- PRICED HINT BUTTON -->
+                    <button onclick="buyPitchHint()" class="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/50 px-4 py-2 rounded-full font-black uppercase hover:bg-blue-500 hover:text-white transition-all">Buy Hint (₹1L)</button>
+                    <button onclick="giftWatch()" id="btn-gift" class="text-[10px] bg-amber-500/20 text-amber-500 border border-amber-500/50 px-4 py-2 rounded-full font-black uppercase hover:bg-amber-500 hover:text-black transition-all">Gift Moonphase Watch</button>
+                </div>
             </div>
 
             <div id="chat-window" class="flex-1 overflow-y-auto p-8 space-y-6">
                 <div class="chat-msg bg-white/5 p-5 rounded-2xl rounded-tl-none max-w-[85%] border border-white/5">
                     <p class="text-[10px] font-black text-purple-400 uppercase mb-2">Lead Investor</p>
-                    <p class="text-sm leading-relaxed">I've been monitoring Aevith Industries. Global scale requires massive capital. Why should I trust you with ₹500 Crore?</p>
+                    <p class="text-sm leading-relaxed">Welcome. I've been monitoring Aevith Industries. What brings you to my office today?</p>
                 </div>
             </div>
 
@@ -90,99 +113,155 @@
 
     <script>
         const SAVE_KEY = 'aevith_tycoon_save_v2';
-        let state = JSON.parse(localStorage.getItem(SAVE_KEY)) || { money: 0 };
+        let state = JSON.parse(localStorage.getItem(SAVE_KEY)) || { money: 1000000, globalAssets: { svj: true, jet: true, yacht: true, superyacht: true } };
         let dealStage = 0;
+        let revenueMultiplier = 1.0;
 
-        // 3D ENGINE VARIABLES
-        let fleetScene, fleetCamera, fleetRenderer, fleetLoader;
+        let fleetScene, fleetCamera, fleetRenderer, fleetLoader, fleetControls;
 
         const chatTree = {
-            0: { keywords: ["hello", "hi", "hey"], response: () => `Hey there. Welcome to the office. Wanna cup of coffee before we get down to business?`, next: 1 },
-            1: { keywords: ["no thanks", "no", "yes", "please"], response: () => `Alright. So, tell me, how is your supercar tycoon business running now?`, next: 2 },
-            2: { keywords: ["well", "profits", "revenue", "investors", "scale"], response: () => `I see. Every empire needs a jumpstart. What would be my profit if I authorized a ₹500 Crore injection?`, next: 3 },
-            3: { keywords: ["bugatti", "modify", "sell", "upgrades", "50%"], response: () => `Wow, that sounds great! A 50% share on a modified fleet is the aggressive vision I fund. Transferring the capital now.`, next: 100 }
+            0: { keywords: ["hello", "hi", "hey", "good"], response: () => `Hello. Straight to the point: are you here seeking an investment for Aevith Industries, or just a social visit?`, next: 1 },
+            1: { keywords: ["investor", "investment", "capital", "yes", "money"], response: () => `I thought so. Your growth is impressive, but global scale is risky. Why should I trust you with ₹500 Crore?`, next: 2 },
+            2: { keywords: ["well", "profits", "revenue", "scale", "plan", "business", "good"], response: () => `Confidence is good, but numbers are better. What exactly is my ROI if I authorize this injection?`, next: 3 },
+            3: { keywords: ["bugatti", "modify", "sell", "upgrades", "50%", "yacht"], response: () => `That is the aggressive vision I fund. A 50% share in your modified fleet is a fair deal. Capital is being transferred.`, next: 100 }
         };
 
-        function updateUI() {
-            document.getElementById('balance-display').innerText = "₹" + Math.floor(state.money).toLocaleString('en-IN');
-            const ga = state.globalAssets || { svj: false, jet: false };
-
-            if(ga.svj) {
-                document.getElementById('btn-svj-view').classList.remove('hidden');
-                document.getElementById('no-assets').classList.add('hidden');
-            }
-            if(ga.jet) {
-                document.getElementById('btn-jet-view').classList.remove('hidden');
-                document.getElementById('no-assets').classList.add('hidden');
+        // PAID HINT LOGIC
+        function buyPitchHint() {
+            const cost = 100000;
+            if(state.money >= cost) {
+                state.money -= cost;
+                localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+                updateUI();
+                addMessage("Hint", "Pitch: 'My plan for scaling Aevith Industries involves acquiring high-value assets like a Bugatti or Yacht. I offer you a 50% share of generated profits to ensure ROI.'", "green");
+            } else {
+                addMessage("System", "INSUFFICIENT CAPITAL FOR HINT (₹1L required).", "red");
             }
         }
 
-        // 3D FLEET VIEWER
+        function toggleFullscreen() {
+            const elem = document.getElementById('fleet-viewport');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => alert(`Error: ${err.message}`));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const container = document.getElementById('fleet-viewport');
+            fleetCamera.aspect = container.clientWidth / container.clientHeight;
+            fleetCamera.updateProjectionMatrix();
+            fleetRenderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        function updateUI() {
+            document.getElementById('balance-display').innerText = "₹" + Math.floor(state.money).toLocaleString('en-IN');
+            const ga = state.globalAssets || { svj: false, jet: false, yacht: false, superyacht: false };
+            if(ga.svj) document.getElementById('btn-svj-view').classList.remove('hidden');
+            if(ga.jet) document.getElementById('btn-jet-view').classList.remove('hidden');
+            if(ga.yacht) document.getElementById('btn-yacht-view').classList.remove('hidden');
+            if(ga.superyacht) document.getElementById('btn-superyacht-view').classList.remove('hidden');
+            if(ga.svj || ga.jet || ga.yacht || ga.superyacht) document.getElementById('no-assets').classList.add('hidden');
+        }
+
+        function maintain(type) {
+            const cost = type === 'fuel' ? 50000 : 200000;
+            if (state.money >= cost) {
+                state.money -= cost;
+                localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+                updateUI();
+                addMessage("System", `${type.toUpperCase()} COMPLETE. Balance updated.`, "green");
+            } else {
+                addMessage("System", "INSUFFICIENT CAPITAL.", "red");
+            }
+        }
+
+        function giftWatch() {
+            const btn = document.getElementById('btn-gift');
+            const currentModel = fleetScene.getObjectByName('preview');
+            if(currentModel) gsap.to(currentModel.rotation, { y: Math.PI * 4, duration: 1.5, ease: "back.out(1.7)" });
+            revenueMultiplier = 1.5;
+            btn.innerHTML = "GIFTED (1.5X BOOST)";
+            btn.disabled = true;
+            addMessage("System", "MOONPHASE GIFT ACCEPTED: Revenue multiplier set to 1.5x.", "green");
+        }
+
         function initFleet3D() {
             const container = document.getElementById('fleet-viewport');
             fleetScene = new THREE.Scene();
             fleetCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             fleetRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('fleet-canvas'), antialias: true, alpha: true });
             fleetRenderer.setSize(container.clientWidth, container.clientHeight);
-            fleetLoader = new THREE.GLTFLoader();
 
+            fleetControls = new THREE.OrbitControls(fleetCamera, fleetRenderer.domElement);
+            fleetControls.enableDamping = true;
+
+            fleetLoader = new THREE.GLTFLoader();
             fleetScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-            fleetCamera.position.set(0, 2, 5);
+            const pointLight = new THREE.PointLight(0xffffff, 1);
+            pointLight.position.set(5, 5, 5);
+            fleetScene.add(pointLight);
+            fleetCamera.position.set(0, 1.5, 4);
             animate();
         }
 
         function previewAsset(type) {
             const old = fleetScene.getObjectByName('preview');
             if(old) fleetScene.remove(old);
+            let file;
+            let scale = 1.0;
 
-            const file = type === 'svj' ? 'aven.glb' : 'ces.glb'; // Adjust to your specific jet filename
+            switch(type) {
+                case 'svj': file = 'aven.glb'; scale = 1.2; break;
+                case 'jet': file = 'ces.glb'; scale = 0.8; break;
+                case 'yacht': file = 'yacht1.glb'; scale = 0.5; break;
+                case 'superyacht': file = 'yacht3.glb'; scale = 0.4; break;
+            }
+
             document.getElementById('model-label').innerText = `AEVITH ${type.toUpperCase()}`;
             document.getElementById('maintenance-menu').classList.remove('hidden');
 
             fleetLoader.load(file, (gltf) => {
                 const model = gltf.scene;
                 model.name = 'preview';
-                model.scale.setScalar(0.7);
+                const box = new THREE.Box3().setFromObject(model);
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+                model.position.sub(center);
+                model.scale.setScalar(scale);
                 fleetScene.add(model);
+                fleetControls.target.copy(model.position);
             });
-        }
-
-        function maintain(action) {
-            const cost = action === 'fuel' ? 50000 : 200000;
-            if (state.money >= cost) {
-                state.money -= cost;
-                localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-                updateUI();
-                addMessage("System", `${action.toUpperCase()} SUCCESSFUL. Asset at 100%.`, "green");
-            } else { alert("Insufficient capital."); }
         }
 
         function sendPitch() {
             const input = document.getElementById('chat-input');
             const pitch = input.value.toLowerCase();
             if(!pitch) return;
-
             addMessage("You", input.value, "white");
             input.value = '';
-
             setTimeout(() => {
                 const step = chatTree[dealStage];
                 if (step && step.keywords.some(k => pitch.includes(k))) {
                     addMessage("Lead Investor", step.response(), "purple");
                     dealStage = step.next;
-
                     if(dealStage === 100) {
-                        const investment = 5000000000; // 500 Crore
+                        const investment = 5000000000 * revenueMultiplier;
                         state.money += investment;
                         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
                         updateUI();
-                        addMessage("System", `INVESTMENT SUCCESSFUL: ₹500.0 Crore added.`, "green");
+                        addMessage("System", `INVESTMENT SUCCESSFUL: ₹${(investment/10000000).toFixed(1)} Crore added.`, "green");
                     }
                 } else {
-                    addMessage("Lead Investor", "I'm not following. Give me a clear answer about your plan to maximize revenue.", "red");
+                    addMessage("Lead Investor", "I'm not following. Give me a clear answer on our potential partnership.", "red");
                 }
             }, 1200);
         }
+
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') sendPitch();
+        });
 
         function addMessage(sender, text, color) {
             const win = document.getElementById('chat-window');
@@ -196,30 +275,11 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            const model = fleetScene.getObjectByName('preview');
-            if(model) model.rotation.y += 0.01;
+            if(fleetControls) fleetControls.update();
             fleetRenderer.render(fleetScene, fleetCamera);
         }
 
         window.onload = () => { updateUI(); initFleet3D(); };
     </script>
-    <!-- FLOATING EXIT BUTTON FOR DEAL.HTML -->
-<button onclick="window.location.href='buy.html'"
-    style="position: absolute; bottom: 30px; left: 30px; z-index: 1000;
-           background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2);
-           color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer;
-           font-weight: 900; text-transform: uppercase; font-size: 10px; letter-spacing: 1px;
-           transition: 0.3s; backdrop-filter: blur(5px);">
-    ← Return to Global Ops
-</button>
-
-<style>
-    /* Add a hover effect for the deal.html button */
-    button:hover {
-        background: rgba(168, 85, 247, 0.4) !important;
-        border-color: #a855f7 !important;
-        box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
-    }
-</style>
 </body>
 </html>
