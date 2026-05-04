@@ -832,9 +832,9 @@
                 { name: "Torino Gladiator", filename: 'gallardo.glb', buyPrice: 8500000, color: "#eab308", trim: "#111827", engine: 0, isRare: false, baseHP: 520, finish: 'Standard' }
             ],
             rareCars: [
-                { name: "Cavallo V40", filename: 'f40.glb', baseBid: 45000000, isRare: true, baseHP: 478, finish: 'Standard' },
-                { name: "MacMillan F-One", filename: 'mclaren_f1.glb', baseBid: 85000000, isRare: true, baseHP: 627, finish: 'Standard' },
-                { name: "Kaiser J-Hyper", filename: 'koenigsegg3.glb', baseBid: 120000000, isRare: true, baseHP: 1280, finish: 'Standard' }
+                { name: "Bouvetti Centurion", filename: 'centurion.glb', baseBid: 45000000, isRare: true, baseHP: 1500, finish: 'Standard' },
+                { name: "Torino Rebelto", filename: 'rebelto.glb', baseBid: 35000000, isRare: true, baseHP: 1000, finish: 'Standard' },
+                { name: "Stuttgart 99-GT", filename: 'stuttgart.glb', baseBid: 25000000, isRare: true, baseHP: 520, finish: 'Standard' }
             ],
             branches: [
                 { name: "London Outlet", cost: 5000000, reqRep: 3, owned: false, bonus: 0.25 },
@@ -1343,5 +1343,240 @@
             }, 3000);
         };
     </script>
+    <!-- START OF BUSINESS OPERATIONS BRIDGE -->
+<script>
+    (function() {
+        // We wrap your existing acceptOffer function to inject the new profit logic
+        const originalAcceptOffer = window.acceptOffer;
+
+        window.acceptOffer = function() {
+            // 1. Get current business assets from shared save data
+            const bu = state.businessUpgrades || {};
+            const car = state.ownedCars[state.currentCarIndex];
+
+            if (state.currentCustomer && car) {
+                let flatBonus = 0;
+                let multiplier = 1.0;
+
+                // 2. Apply ECU Tuning Station Bonus (+₹50 Lakh)
+                if (bu.laptop) {
+                    flatBonus += 5000000;
+                }
+
+                // 3. Apply Service Bay Lift Bonus (+15%)
+                if (bu.lift) {
+                    multiplier += 0.15;
+                }
+
+                // 4. Apply Moonphase Watch Status Bonus (+10%)
+                if (bu.watch) {
+                    multiplier += 0.10;
+                }
+
+                // Inject the business profit into the offer before the original function runs
+                const originalOffer = state.currentCustomer.offer;
+                state.currentCustomer.offer = (originalOffer * multiplier) + flatBonus;
+
+                // 5. Visual Addiction Feedback
+                if (bu.laptop || bu.lift || bu.watch) {
+                    setTimeout(() => {
+                        const extra = state.currentCustomer.offer - originalOffer;
+                        triggerFloat(`BUSINESS BONUS: +₹${Math.floor(extra).toLocaleString('en-IN')}`, "#22d3ee");
+                    }, 500);
+                }
+            }
+
+            // Execute your original game code (No changes made to original functions)
+            originalAcceptOffer();
+        };
+
+        // 6. 3D Model Garage Loader Hook
+        const originalToggleGarageMode = window.toggleGarageMode;
+        window.toggleGarageMode = function() {
+            originalToggleGarageMode();
+
+            const bu = state.businessUpgrades || {};
+
+            // Render the Lift in 3D if owned
+            if (bu.lift && !scene.getObjectByName('garage_lift_asset')) {
+                loader.load('hydraulic_car_lift.glb', (gltf) => {
+                    const lift = gltf.scene;
+                    lift.name = 'garage_lift_asset';
+                    lift.position.set(0, -0.4, 0);
+                    lift.visible = state.isGarageMode;
+                    scene.add(lift);
+                });
+            }
+
+            // Render the Laptop in 3D if owned
+            if (bu.laptop && !scene.getObjectByName('garage_laptop_asset')) {
+                loader.load('gaming_laptop.glb', (gltf) => {
+                    const laptop = gltf.scene;
+                    laptop.name = 'garage_laptop_asset';
+                    laptop.position.set(3, 1, -2);
+                    laptop.scale.setScalar(0.5);
+                    laptop.visible = state.isGarageMode;
+                    scene.add(laptop);
+                });
+            }
+        };
+    })();
+</script>
+<!-- END OF BUSINESS OPERATIONS BRIDGE -->
+ <!-- START OF BUSINESS OPERATIONS BRIDGE -->
+<script>
+    (function() {
+        // 1. DATA SYNC: This fixes the missing line in loadGameData
+        // It ensures the business assets are recognized even if the original function doesn't have them.
+        window.addEventListener('load', () => {
+    if (typeof state !== 'undefined') {
+        state.businessUpgrades = state.businessUpgrades || { laptop: false, lift: false, watch: false, server: false };
+    }
+
+    // MARKETING SERVER: If owned, force Hype to 100% every 2 seconds
+    setInterval(() => {
+        const bu = state.businessUpgrades || {};
+        if (bu.server) {
+            state.hype = 2.0; // 2.0 represents 100% hype in your engine
+            if (typeof updateUI === 'function') updateUI();
+        }
+    }, 2000);
+});
+
+        // 2. PROFIT MULTIPLIER HOOK
+        const originalAcceptOffer = window.acceptOffer;
+        window.acceptOffer = function() {
+            const bu = state.businessUpgrades || {};
+            const car = state.ownedCars[state.currentCarIndex];
+
+            // THIS GOES INSIDE window.acceptOffer IN YOUR BRIDGE AT THE BOTTOM OF index.html
+if (state.currentCustomer && car) {
+    let flatBonus = bu.laptop ? 5000000 : 0;
+    let multiplier = 1.0;
+    if (bu.lift) multiplier += 0.15;
+    if (bu.watch) multiplier += 0.10;
+
+    const originalOffer = state.currentCustomer.offer;
+    // Mathematically maximize the profit
+    state.currentCustomer.offer = (originalOffer * multiplier) + flatBonus;
+
+    if (bu.laptop || bu.lift || bu.watch) {
+        // TIMED NOTIFICATION: Triggers 100ms after the sale logic to ensure visibility
+        setTimeout(() => {
+            if (typeof triggerFloat === 'function') {
+                const extra = state.currentCustomer.offer - originalOffer;
+                triggerFloat(`BUSINESS BONUS: +₹${Math.floor(extra).toLocaleString('en-IN')}`, "#22d3ee");
+            }
+        }, 100);
+    }
+originalAcceptOffer();
+};
+
+                const originalOffer = state.currentCustomer.offer;
+                state.currentCustomer.offer = (originalOffer * multiplier) + flatBonus;
+
+                if (bu.laptop || bu.lift || bu.watch) {
+                    setTimeout(() => {
+                        const extra = state.currentCustomer.offer - originalOffer;
+                        triggerFloat(`BUSINESS BONUS: +₹${Math.floor(extra).toLocaleString('en-IN')}`, "#22d3ee");
+                    }, 500);
+                }
+            }
+            originalAcceptOffer();
+
+        // 3. 3D MODEL GARAGE LOADER HOOK
+        const originalToggleGarageMode = window.toggleGarageMode;
+        window.toggleGarageMode = function() {
+            originalToggleGarageMode();
+            const bu = state.businessUpgrades || {};
+
+            // Render the Lift in 3D if owned
+            if (bu.lift && !scene.getObjectByName('garage_lift_asset')) {
+                loader.load('hydraulic_car_lift.glb', (gltf) => {
+                    const lift = gltf.scene;
+                    lift.name = 'garage_lift_asset';
+                    lift.position.set(0, -0.4, 0);
+                    lift.visible = state.isGarageMode;
+                    scene.add(lift);
+                });
+            }
+
+            // Render the Laptop in 3D if owned
+            if (bu.laptop && !scene.getObjectByName('garage_laptop_asset')) {
+                loader.load('gaming_laptop.glb', (gltf) => {
+                    const laptop = gltf.scene;
+                    laptop.name = 'garage_laptop_asset';
+                    laptop.position.set(3, 1, -2);
+                    laptop.scale.setScalar(0.5);
+                    laptop.visible = state.isGarageMode;
+                    scene.add(laptop);
+                });
+            }
+
+            // Update visibility for existing assets
+            const l1 = scene.getObjectByName('garage_lift_asset');
+            const l2 = scene.getObjectByName('garage_laptop_asset');
+            if(l1) l1.visible = state.isGarageMode;
+            if(l2) l2.visible = state.isGarageMode;
+        };
+    })();
+    // GLOBAL OPERATIONS BRIDGE (Add at Line 1521)
+(function() {
+    window.addEventListener('load', () => {
+        // Initialize global assets if missing
+        state.globalAssets = state.globalAssets || { svj: false, jet: false, adsActive: false };
+
+        // 1. DYNAMIC HYPE ENGINE (Instagram Ads)
+        setInterval(() => {
+            if (state.globalAssets.adsActive) {
+                // Boost hype by 5% every 5 seconds
+                state.hype = Math.min(2.0, state.hype + 0.1);
+                if (typeof updateUI === 'function') updateUI();
+            }
+        }, 5000);
+
+        // 2. MAINTENANCE DEDUCTION (The "Realism" Tax)
+        setInterval(() => {
+            if (state.money > 100000) {
+                let dailyCost = 1000;
+                if (state.globalAssets.svj) dailyCost += 15000;
+                if (state.globalAssets.jet) dailyCost += 120000;
+
+                state.money -= dailyCost;
+                if (typeof updateUI === 'function') updateUI();
+            }
+        }, 15000); // Deduct every 15 seconds
+    });
+
+    // 3. RENDER THE SVJ & MONEY IN GARAGE
+    const originalToggle = window.toggleGarageMode;
+    window.toggleGarageMode = function() {
+        originalToggle();
+        const ga = state.globalAssets || {};
+
+        // Load Aventador SVJ if owned
+        if (ga.svj && !scene.getObjectByName('svj_asset')) {
+            loader.load('aven.glb', (gltf) => {
+                const svj = gltf.scene;
+                svj.name = 'svj_asset';
+                svj.position.set(-5, 0, 5); // Positioned in the "VIP Spot"
+                svj.visible = state.isGarageMode;
+                scene.add(svj);
+            });
+        }
+        // Load Money Stacks if capital > 100 Crore
+        if (state.money > 1000000000 && !scene.getObjectByName('money_visual')) {
+            loader.load('money_stacks.glb', (gltf) => {
+                const money = gltf.scene;
+                money.name = 'money_visual';
+                money.position.set(3, 0.8, -1.5); // On the desk next to the laptop
+                money.scale.setScalar(0.2);
+                money.visible = state.isGarageMode;
+                scene.add(money);
+            });
+        }
+    };
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Operations Center | Supercar Tycoon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+        body {
+            background: radial-gradient(circle at top, #001219 0%, #000000 100%);
+            color: #e0f2fe;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .return-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(-5px); /* Adds a nice "pointing back" motion */
+}
+        .neon-border { border: 1px solid rgba(34, 211, 238, 0.3); box-shadow: 0 0 15px rgba(34, 211, 238, 0.1); }
+        .neon-card:hover { border-color: rgba(34, 211, 238, 1); box-shadow: 0 0 25px rgba(34, 211, 238, 0.3); transform: translateY(-5px); }
+        .stat-badge { background: rgba(34, 211, 238, 0.05); border-left: 3px solid #22d3ee; }
+        .buy-btn:disabled { background: #1e293b !important; color: #64748b !important; cursor: default; }
+        .profit-text { color: #22c55e; text-shadow: 0 0 10px rgba(34, 197, 94, 0.3); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- HEADER -->
+    <div class="max-w-6xl mx-auto flex justify-between items-end mb-12 border-b border-white/5 pb-8">
+        <div>
+            <h1 class="text-5xl font-black uppercase italic tracking-tighter text-white">Operations <span class="text-cyan-400">Center</span></h1>
+            <p class="text-slate-500 text-xs font-bold tracking-[0.3em] uppercase mt-2">Invest Capital. Maximize Resale. Dominate.</p>
+        </div>
+        <div class="text-right bg-black/40 p-6 rounded-2xl neon-border">
+            <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Available Capital</p>
+            <h2 id="balance-display" class="text-3xl font-black text-cyan-400 tracking-tighter">₹0</h2>
+        </div>
+    </div>
+
+    <!-- MAIN HUSTLE SECTION -->
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+        <!-- ASSET 1: ECU TUNING STATION -->
+        <div class="neon-card neon-border bg-black/60 p-8 rounded-[2.5rem] transition-all duration-500">
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-5xl">💻</div>
+                <span class="text-[9px] font-black bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-full uppercase">Software Asset</span>
+            </div>
+            <h3 class="text-2xl font-black uppercase text-white mb-3 tracking-tight">ECU Tuning Station</h3>
+            <p class="text-slate-400 text-sm leading-relaxed mb-6">Remap supercar engines for peak performance. Adds massive value to stock inventory.</p>
+            <div class="stat-badge p-4 mb-8">
+                <p class="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-1">Business Advantage</p>
+                <p class="text-white font-black text-lg">+₹50,00,000 <span class="text-xs font-normal text-slate-400">per sale</span></p>
+            </div>
+            <button id="btn-laptop" onclick="buyAsset('laptop', 2500000)" class="buy-btn w-full py-5 bg-cyan-500 text-black font-black uppercase rounded-2xl hover:bg-white transition-all shadow-lg text-sm">Invest ₹25,00,000</button>
+        </div>
+
+        <!-- ASSET 2: SERVICE BAY LIFT -->
+        <div class="neon-card neon-border bg-black/60 p-8 rounded-[2.5rem] transition-all duration-500">
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-5xl">🏗️</div>
+                <span class="text-[9px] font-black bg-green-500/10 text-green-400 px-3 py-1 rounded-full uppercase">Hardware Asset</span>
+            </div>
+            <h3 class="text-2xl font-black uppercase text-white mb-3 tracking-tight">Service Bay Lift</h3>
+            <p class="text-slate-400 text-sm leading-relaxed mb-6">Enables under-chassis detailing. Improves total car valuation accuracy.</p>
+            <div class="stat-badge p-4 mb-8 border-l-green-500">
+                <p class="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Profit Multiplier</p>
+                <p class="text-white font-black text-lg">+15% <span class="text-xs font-normal text-slate-400">total price boost</span></p>
+            </div>
+            <button id="btn-lift" onclick="buyAsset('lift', 7500000)" class="buy-btn w-full py-5 bg-cyan-500 text-black font-black uppercase rounded-2xl hover:bg-white transition-all shadow-lg text-sm">Invest ₹75,00,000</button>
+        </div>
+
+        <!-- ASSET 3: MOONPHASE WATCH -->
+        <div class="neon-card neon-border bg-black/60 p-8 rounded-[2.5rem] transition-all duration-500">
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-5xl">⌚</div>
+                <span class="text-[9px] font-black bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full uppercase">Prestige Asset</span>
+            </div>
+            <h3 class="text-2xl font-black uppercase text-white mb-3 tracking-tight">Moonphase Watch</h3>
+            <p class="text-slate-400 text-sm leading-relaxed mb-6">Executive status symbol. High-net-worth buyers offer significantly more capital.</p>
+            <div class="stat-badge p-4 mb-8 border-l-amber-500">
+                <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Status Bonus</p>
+                <p class="text-white font-black text-lg">+10% <span class="text-xs font-normal text-slate-400">buyer patience</span></p>
+            </div>
+            <button id="btn-watch" onclick="buyAsset('watch', 1200000)" class="buy-btn w-full py-5 bg-cyan-500 text-black font-black uppercase rounded-2xl hover:bg-white transition-all shadow-lg text-sm">Invest ₹12,00,000</button>
+        </div>
+
+        <!-- ASSET 4: MARKETING SERVER -->
+        <div class="neon-card neon-border bg-black/60 p-8 rounded-[2.5rem] transition-all duration-500">
+            <div class="flex justify-between items-start mb-6">
+                <div class="text-5xl">📡</div>
+                <span class="text-[9px] font-black bg-purple-500/10 text-purple-400 px-3 py-1 rounded-full uppercase">Automation Asset</span>
+            </div>
+            <h3 class="text-2xl font-black uppercase text-white mb-3 tracking-tight">Marketing Server</h3>
+            <p class="text-slate-400 text-sm leading-relaxed mb-6">Automated social media campaigns. Keeps your dealership Hype permanently at maximum.</p>
+            <div class="stat-badge p-4 mb-8 border-l-purple-500">
+                <p class="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Hype Control</p>
+                <p class="text-white font-black text-lg">PERMANENT 100% <span class="text-xs font-normal text-slate-400">brand hype</span></p>
+            </div>
+            <button id="btn-server" onclick="buyAsset('server', 150000000)" class="buy-btn w-full py-5 bg-cyan-500 text-black font-black uppercase rounded-2xl hover:bg-white transition-all shadow-lg text-sm">Invest ₹15,00,00,000</button>
+        </div>
+        <!-- HEADER SECTION UPDATE -->
+<div>
+    <h1 class="text-4xl font-black uppercase italic tracking-tighter text-white">Global <span class="text-purple-500">Operations</span></h1>
+    <div class="flex gap-4 items-center mt-1">
+        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Aevith Labs International Division</p>
+        <!-- NEW EXIT BUTTON -->
+        <button onclick="window.location.href='deal.html'" class="text-[9px] bg-blue-500/10 text-blue-500 border border-blue-500/30 px-2 py-0.5 rounded hover:bg-blue-500 hover:text-white transition-all uppercase font-black">Enter Office</button>
+    </div>
+</div>
+
+    </div>
+
+    <!-- BACK TO BUSINESS -->
+    <div class="max-w-6xl mx-auto mt-16 text-center">
+        <button onclick="window.location.href='vip.html'" class="text-slate-600 hover:text-cyan-400 font-black uppercase text-[10px] tracking-[0.5em] transition-all py-4 px-8 border border-white/5 rounded-full hover:border-cyan-500/30">◀ Return to Executive Vault</button>
+    </div>
+
+    <script>
+        const SAVE_KEY = 'aevith_tycoon_save_v2';
+        let state = JSON.parse(localStorage.getItem(SAVE_KEY)) || { money: 0 };
+
+        function updateUI() {
+            document.getElementById('balance-display').innerText = "₹" + Math.floor(state.money).toLocaleString('en-IN');
+            const bu = state.businessUpgrades || {};
+            if(bu.laptop) { setOwned('btn-laptop'); }
+            if(bu.lift) { setOwned('btn-lift'); }
+            if(bu.watch) { setOwned('btn-watch'); }
+            if(bu.server) { setOwned('btn-server'); }
+        }
+
+        function setOwned(id) {
+            const btn = document.getElementById(id);
+            btn.innerText = "ASSET ACTIVE";
+            btn.disabled = true;
+            btn.classList.add('opacity-40');
+        }
+
+        function buyAsset(type, cost) {
+            if (state.money >= cost) {
+                state.money -= cost;
+                if(!state.businessUpgrades) state.businessUpgrades = {};
+                state.businessUpgrades[type] = true;
+                localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+                updateUI();
+
+                // Audio Feedback
+                const audio = new AudioContext();
+                const osc = audio.createOscillator();
+                const gain = audio.createGain();
+                osc.connect(gain); gain.connect(audio.destination);
+                osc.frequency.value = 800; gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 0.5);
+                osc.start(); osc.stop(audio.currentTime + 0.5);
+
+                alert("STRATEGIC INVESTMENT SUCCESSFUL. YOUR PROFITS HAVE SCALED.");
+            } else {
+                alert("INSUFFICIENT CAPITAL. FLIP MORE CARS IN THE SHOWROOM.");
+            }
+        }
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
