@@ -85,6 +85,30 @@
         height: auto !important;
     }
 }
+        /* RESPONSIVE MOBILE OVERRIDES */
+@media (max-width: 768px) {
+    /* Automatically shrinks the giant currency numbers so they fit in the box */
+    #balance-display, .vault-balance, h2[id*="balance"] {
+        font-size: 1.1rem !important; 
+        letter-spacing: -1px;
+        white-space: nowrap;
+    }
+
+    /* Stacks your game windows vertically so they don't push each other off-screen */
+    .max-w-7xl, .grid-cols-4 {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 10px !important;
+    }
+
+    /* Ensures the 3D viewport card stays centered and fills the screen */
+    .glass-card {
+        width: 95% !important;
+        margin: 0 auto !important;
+        height: auto !important;
+    }
+}
+
     </style>
 </head>
 <body class="p-4 md:p-8">
