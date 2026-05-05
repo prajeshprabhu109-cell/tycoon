@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
     <title>Supercar Tycoon - VIP Executive Vault</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -114,6 +114,36 @@
             text-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 2px 4px rgba(0,0,0,1);
             pointer-events: none; z-index: 9999; animation: popUpFade 1.2s ease-out forwards;
         }
+        /* This only activates on screens smaller than 768px */
+@media (max-width: 768px) {
+    #balance-display {
+        font-size: 1.25rem !important; /* Forces the number to shrink on mobile */
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* Adds '...' if the number is still too long */
+    }
+}
+@media (max-width: 768px) {
+    /* Escape the colon with a backslash */
+    .lg\:grid-cols-4 {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Escape the brackets with backslashes */
+    .h-\[650px\] {
+        height: auto !important;
+        min-height: 500px;
+    }
+
+    .max-w-7xl.mx-auto.flex {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        text-align: center;
+    }
+}
     </style>
 </head>
 <body onclick="unlockAudio()">
