@@ -180,6 +180,20 @@
         }
         
   @media (max-width: 768px) {
+      #customer-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 99999 !important; /* Extremely high to stay on top */
+    width: 90% !important;
+    pointer-events: all !important; /* Forces the button to be clickable */
+}
+
+.modal-overlay {
+    z-index: 99998 !important;
+}
+      
             /* This makes the left menu scrollable on mobile */
 .lg\:col-span-1 {
     max-height: 50vh !important; /* Limits height to half the screen */
