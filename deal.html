@@ -64,6 +64,29 @@
         text-align: center;
     }
 }
+/* RESPONSIVE MOBILE OVERRIDES */
+@media (max-width: 768px) {
+    /* Shrinks the giant currency numbers so they stay in the box */
+    #balance-display, .vault-balance, h2[id*="balance"] {
+        font-size: 1.1rem !important;
+        letter-spacing: -1px;
+        white-space: nowrap;
+    }
+
+    /* Stacks your game windows vertically so they don't go off-screen */
+    .max-w-7xl, .grid-cols-4 {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 10px !important;
+    }
+
+    /* Ensures the main card fills the width but stays centered */
+    .glass-card {
+        width: 95% !important;
+        margin: 0 auto !important;
+        height: auto !important;
+    }
+}
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -97,7 +120,7 @@
 
                     <!-- FULLSCREEN LOGO IMPLEMENTATION -->
                     <button onclick="toggleFullscreen()" class="absolute top-3 right-3 z-50">
-                        <img id="fullscreen-btn" src="https://i.ibb.co/Lz00XkH/fullscreen-icon.png" alt="Fullscreen" class="w-5 h-5 opacity-70 hover:opacity-100">
+                        <img id="fullscreen-btn" src="fullscreen-icon.png" alt="Fullscreen" class="w-5 h-5 opacity-70 hover:opacity-100">
                     </button>
 
                     <div id="model-label" class="absolute bottom-2 left-2 text-[10px] font-black uppercase text-purple-400">Select Asset</div>

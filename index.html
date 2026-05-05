@@ -223,6 +223,29 @@
         text-align: center;
     }
 }
+/* RESPONSIVE MOBILE OVERRIDES */
+@media (max-width: 768px) {
+    /* Shrinks the giant currency numbers so they stay in the box */
+    #balance-display, .vault-balance, h2[id*="balance"] {
+        font-size: 1.1rem !important;
+        letter-spacing: -1px;
+        white-space: nowrap;
+    }
+
+    /* Stacks your game windows vertically so they don't go off-screen */
+    .max-w-7xl, .grid-cols-4 {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 10px !important;
+    }
+
+    /* Ensures the main card fills the width but stays centered */
+    .glass-card {
+        width: 95% !important;
+        margin: 0 auto !important;
+        height: auto !important;
+    }
+}
     </style>
 </head>
 <body>
@@ -1085,10 +1108,14 @@
                 if(get('progress-bar')) get('progress-bar').style.width = state.condition + "%";
                 if(get('repair-tiny-bar')) get('repair-tiny-bar').style.width = state.condition + "%";
 
-                const currentHP = car.baseHP + (car.engine * 150);
-                const currentSpeed = Math.floor(200 + (car.engine * 50) + (currentHP / 10));
-                if(get('hp-display')) get('hp-display').innerText = currentHP + " HP";
-                if(get('speed-display')) get('speed-display').innerText = currentSpeed + " km/h";
+                // 1. Calculate stats with a safety check for 'NaN'
+// Check if currentHP and currentSpeed are valid numbers, otherwise default to 0
+const displayHP = (typeof currentHP === 'number' && !isNaN(currentHP)) ? currentHP : 0;
+const displaySpeed = (typeof currentSpeed === 'number' && !isNaN(currentSpeed)) ? currentSpeed : 0;
+
+// 2. Update the display elements safely
+if(get('hp-display')) get('hp-display').innerText = displayHP + " HP";
+if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h";
 
                 for(let i=1; i<=3; i++) {
                     const dot = get(`d-dot-${i}`); if (dot) dot.style.backgroundColor = state.detailingLevel >= i ? '#a855f7' : '#334155';
@@ -1388,10 +1415,17 @@
         // We wrap your existing acceptOffer function to inject the new profit logic
         const originalAcceptOffer = window.acceptOffer;
 
-        window.acceptOffer = function() {
-            // 1. Get current business assets from shared save data
-            const bu = state.businessUpgrades || {};
-            const car = state.ownedCars[state.currentCarIndex];
+       window.acceptOffer = function() {
+    // Safety check: if state hasn't loaded, don't crash
+    if (!state || !state.businessUpgrades) {
+        console.warn("Aevith Labs System: Data not yet synchronized.");
+        return;
+    }
+
+    // Existing logic...
+    const bu = state.businessUpgrades || {};
+    // ... rest of your code
+
 
             if (state.currentCustomer && car) {
                 let flatBonus = 0;
