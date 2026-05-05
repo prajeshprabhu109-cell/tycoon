@@ -269,7 +269,38 @@
         height: auto !important;
     }
 }
+/* UPDATED RESPONSIVE MOBILE OVERRIDES */
+@media (max-width: 768px) {
+    /* 1. Shrinks giant text */
+    #balance-display, .vault-balance {
+        font-size: 1rem !important; 
+        letter-spacing: -0.5px;
+    }
 
+    /* 2. MAKES THE LEFT SECTION SCROLLABLE */
+    /* Adjust this selector to match your left-side container ID or class */
+    .lg\:col-span-1, #left-menu-container {
+        max-height: 400px !important; /* Limits height so it scrolls */
+        overflow-y: auto !important;  /* Enables the scroll down option */
+        padding-bottom: 20px;
+        -webkit-overflow-scrolling: touch; /* Smooth scroll for iPhones */
+    }
+
+    /* 3. FIXES THE "ACCEPT & SELL" BUTTON */
+    /* This ensures the popup modal sits on top of everything else */
+    #customer-modal, .modal-overlay {
+        position: fixed !important;
+        z-index: 9999 !important; /* Forces it to the front */
+        pointer-events: all !important; /* Ensures it accepts clicks */
+    }
+
+    /* Stacks columns vertically */
+    .max-w-7xl, .grid-cols-4 {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+}
+        
     </style>
 </head>
 <body>
