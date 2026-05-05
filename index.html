@@ -181,6 +181,22 @@
 
         @media (max-width: 1024px) { #main-container { grid-template-columns: 240px 1fr 75px; } }
         @media (max-width: 768px) {
+            /* This makes the left menu scrollable on mobile */
+.lg\:col-span-1 {
+    max-height: 50vh !important; /* Limits height to half the screen */
+    overflow-y: auto !important;  /* Adds the scrollbar */
+    padding-bottom: 30px !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch; /* Makes scrolling smooth on iPhone */
+}
+
+/* Ensures the buttons inside the menu don't get cut off */
+.lg\:col-span-1 .grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+}
+            
             #main-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; overflow-y: auto; padding-bottom: 120px; }
             .action-column { flex-direction: row !important; width: 100%; justify-content: center; gap: 0.5rem; height: auto !important; padding: 1rem 0; flex-wrap: wrap; }
         }
@@ -1572,10 +1588,25 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
 });
 
         // 2. PROFIT MULTIPLIER HOOK
-        const originalAcceptOffer = window.acceptOffer;
-        window.acceptOffer = function() {
-            const bu = state.businessUpgrades || {};
-            const car = state.ownedCars[state.currentCarIndex];
+        // Add this check to ensure the function exists before wrapping it
+const originalAcceptOffer = typeof window.acceptOffer === 'function' ? window.acceptOffer : null;
+
+window.acceptOffer = function() {
+    console.log("Accept Offer Triggered"); // This helps you test if it's working
+    
+    if (!state || !state.businessUpgrades) return;
+
+    // ... your existing multiplier logic ...
+
+    if (originalAcceptOffer) {
+        originalAcceptOffer();
+    } else {
+        // Fallback: if the original function wasn't found, try to close the modal manually
+        if(document.getElementById('customer-modal')) {
+            document.getElementById('customer-modal').classList.remove('active');
+        }
+    }
+};
 
             // THIS GOES INSIDE window.acceptOffer IN YOUR BRIDGE AT THE BOTTOM OF index.html
 if (state.currentCustomer && car) {
