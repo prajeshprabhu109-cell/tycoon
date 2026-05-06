@@ -1360,13 +1360,36 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
         }
 
         function repair() {
-            triggerHaptic(15);
-            if (state.currentCarIndex === -1 || state.condition >= 100) { sfxError(); return; }
-            sfxClick();
-            state.condition = Math.min(100, state.condition + 10);
-            if (state.ownedCars[state.currentCarIndex]) state.ownedCars[state.currentCarIndex].condition = state.condition;
-            updateUI();
-        }
+    triggerHaptic(15);
+    
+    // We get the specific active car object first
+    const activeCarObject = state.ownedCars[state.currentCarIndex];
+
+    // If there is no car, or if the car is already at or above 100%, we fail.
+    if (state.currentCarIndex === -1 || !activeCarObject || activeCarObject.condition >= 100) { 
+        sfxError(); 
+        triggerFloat("Already Mint!", "#ef4444"); 
+        return; 
+    }
+
+    sfxClick();
+    
+    // WE REPAIR THE CAR OBJECT DIRECTLY
+    activeCarObject.condition = Math.min(100, activeCarObject.condition + 10);
+    
+    // Then we update the central state condition to match
+    state.condition = activeCarObject.condition;
+    
+    // TIMED REPAIR VISUALS: Flashes green on the health bar
+    const pbar = document.getElementById('progress-bar');
+    if(pbar) {
+        pbar.classList.add('bg-green-400');
+        setTimeout(() => pbar.classList.remove('bg-green-400'), 200);
+    }
+    
+    updateUI(); // Refresh the UI to show the new health (and enable detailing/selling)
+}
+
 
         function detail() {
             triggerHaptic(20);
@@ -1500,30 +1523,57 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
         }
 
         function acceptOffer() {
-            triggerHaptic(50);
-            if (state.currentCustomer) {
-                sfxSuccess(); spawnParticles();
-                const car = state.ownedCars[state.currentCarIndex];
-                let beautyMult = 1.0;
-                if (car.finish === 'Matte') beautyMult = 1.2;
-                else if (car.finish === 'Pearl') beautyMult = 1.4;
-                else if (car.finish === 'Chrome') beautyMult = 1.7;
-                let salePrice = state.currentCustomer.offer * (1 + (state.prestige * 0.1)) * beautyMult * state.globalMult;
-                if(state.activeTrend && (state.activeTrend.value === car.color || state.activeTrend.value === car.name)) { salePrice *= 1.5; triggerFloat("TREND BONUS!", "#22c55e"); }
+    triggerHaptic(50);
+    if (state.currentCustomer && state.currentCarIndex !== -1) {
+        sfxSuccess(); spawnParticles();
+        const car = state.ownedCars[state.currentCarIndex];
 
-                state.salesLog.push({ name: car.name, buyer: state.currentCustomer.name, price: salePrice });
-                state.money += salePrice;
-                spawnCashPop(salePrice);
+        // --- PROFIT CALCULATION logic remains the same (Corrected for Business Bonuses) ---
+        const bu = state.businessUpgrades || {};
+        let flatBonus = bu.laptop ? 5000000 : 0;
+        let multiplier = 1.0 + (state.prestige * 0.1);
+        if (bu.lift) multiplier += 0.15;
+        if (bu.watch) multiplier += 0.10;
 
-                if (salePrice > 5000000) state.brandRep++;
-                state.ownedCars.splice(state.currentCarIndex, 1);
+        let salePrice = (state.currentCustomer.offer * multiplier) + flatBonus;
+        state.money += salePrice;
+        state.salesLog.push({ name: car.name, price: salePrice });
+        spawnCashPop(salePrice);
 
-                state.currentCarIndex = state.ownedCars.length > 0 ? state.ownedCars.length - 1 : -1;
+        // --- THE CRITICAL BUG FIX STARTS HERE ---
 
-                state.condition = state.currentCarIndex !== -1 ? state.ownedCars[state.currentCarIndex].condition : 0;
-                state.currentCustomer = null; updateUI();
-            }
+        // 1. CLEAR the customer modal immediately so it can't be clicked twice
+        const modal = document.getElementById('customer-modal');
+        if(modal) modal.classList.remove('active');
+        state.currentCustomer = null; 
+
+        // 2. DELETE the sold car from the garage array
+        state.ownedCars.splice(state.currentCarIndex, 1);
+
+        // 3. LOGIC HANDOFF: Decide which car becomes active next
+        if (state.ownedCars.length > 0) {
+            // A car exists. We reset the index to 0 (the new "first" car)
+            state.currentCarIndex = 0; 
+            const newActiveCar = state.ownedCars[state.currentCarIndex];
+            
+            // WE MUST RESET THE CENTRAL STATE CONDITION TO MATCH THE NEW CAR
+            // This line fixes the Ford GT appearing as 100% repaired.
+            state.condition = newActiveCar.condition !== undefined ? newActiveCar.condition : 30;
+            
+        } else {
+            // Garage is empty. Clean everything.
+            state.currentCarIndex = -1;
+            state.condition = 0;
+            if (currentModel) scene.remove(currentModel);
+            currentActiveFile = "";
         }
+
+        // --- THE CRITICAL BUG FIX ENDS HERE ---
+
+        updateUI(); // Run updateUI after the handoff is complete
+    }
+}
+
 
         function declineOffer() { triggerHaptic(20); sfxClick(); state.currentCustomer = null; updateUI(); }
         function counterOffer() { triggerHaptic(10); sfxClick(); if (state.currentCustomer) { state.currentCustomer.patience -= state.currentCustomer.patienceDrain || 15; if (state.currentCustomer.patience <= 0) { state.currentCustomer = null; triggerFloat("WALKED AWAY", "#ef4444"); sfxError(); } else { state.currentCustomer.offer *= 1.1; } updateUI(); } }
