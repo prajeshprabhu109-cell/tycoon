@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
 
-    <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
@@ -693,14 +693,14 @@
 
         let audioStarted = false;
 
-        if (typeof PokiSDK !== 'undefined') {
-            PokiSDK.init().then(() => {
-                console.log("Poki SDK successfully initialized");
-                PokiSDK.gameLoadingStart();
-            }).catch(() => {
-                console.log("Initialized, but adblock is likely enabled.");
-            });
-        }
+        // if (typeof PokiSDK !== 'undefined') {
+            // PokiSDK.init().then(() => {
+                // console.log("Poki SDK successfully initialized");
+                // PokiSDK.gameLoadingStart();
+            // }).catch(() => {
+                // console.log("Initialized, but adblock is likely enabled.");
+            // });
+        // }
 
         document.body.addEventListener('click', () => {
             if (!audioStarted) {
@@ -772,11 +772,11 @@
                 garageModelGlobal.visible = false;
                 scene.add(garageModelGlobal);
 
-                if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
+                // if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
 
-            }, undefined, (err) => {
-                console.log("Garage model not found yet.");
-                if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
+            // }, undefined, (err) => {
+                // console.log("Garage model not found yet.");
+                // if (typeof PokiSDK !== 'undefined') PokiSDK.gameLoadingFinished();
             });
 
             raycaster = new THREE.Raycaster();
@@ -1053,7 +1053,7 @@
             rareCars: [
                 { name: "Bouvetti Centurion", filename: 'centurion.glb', baseBid: 45000000, isRare: true, baseHP: 1500, finish: 'Standard' },
                 { name: "Torino Rebelto", filename: 'rebelto.glb', baseBid: 35000000, isRare: true, baseHP: 1000, finish: 'Standard' },
-                { name: "Stuttgart 99-GT", filename: 'stuttgart.glb', baseBid: 25000000, isRare: true, baseHP: 520, finish: 'Standard' }
+                // { name: "Stuttgart 99-GT", filename: 'stuttgart.glb', baseBid: 25000000, isRare: true, baseHP: 520, finish: 'Standard' }
             ],
             branches: [
                 { name: "London Outlet", cost: 5000000, reqRep: 3, owned: false, bonus: 0.25 },
@@ -1129,32 +1129,25 @@
         function unlockAdCar() {
             triggerHaptic(20);
             sfxClick();
-            if (typeof PokiSDK !== 'undefined') {
-                if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
-                PokiSDK.rewardedBreak().then((success) => {
-                    if(success) {
-                        sfxSuccess();
-                        spawnParticles();
-                        state.ownedCars.push({ name: "Vigilante Phantom", filename: 'bat1.glb', buyPrice: 25000000, color: "#111111", trim: "#000000", engine: 3, isRare: true, baseHP: 900, finish: 'Matte', garageX: 0, garageZ: 0, condition: 100 });
-                        state.currentCarIndex = state.ownedCars.length - 1;
-                        state.condition = 100;
-                        triggerFloat("VIGILANTE UNLOCKED!", "#fbbf24");
-                        updateUI();
-                    } else {
-                        sfxError();
-                        triggerFloat("AD CANCELLED", "#ef4444");
-                    }
+            if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
+            window.CrazyGames.SDK.ad.showAd('rewarded', {
+                adStarted: () => {},
+                adError: (err) => {
+                    sfxError();
+                    triggerFloat("AD ERROR", "#ef4444");
                     if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
-                });
-            } else {
-                sfxSuccess();
-                spawnParticles();
-                state.ownedCars.push({ name: "Vigilante Phantom", filename: 'bat1.glb', buyPrice: 25000000, color: "#111111", trim: "#000000", engine: 3, isRare: true, baseHP: 900, finish: 'Matte', garageX: 0, garageZ: 0, condition: 100 });
-                state.currentCarIndex = state.ownedCars.length - 1;
-                state.condition = 100;
-                triggerFloat("TEST: VIGILANTE UNLOCKED!", "#fbbf24");
-                updateUI();
-            }
+                },
+                adFinished: () => {
+                    sfxSuccess();
+                    spawnParticles();
+                    state.ownedCars.push({ name: "Vigilante Phantom", filename: 'bat1.glb', buyPrice: 25000000, color: "#111111", trim: "#000000", engine: 3, isRare: true, baseHP: 900, finish: 'Matte', garageX: 0, garageZ: 0, condition: 100 });
+                    state.currentCarIndex = state.ownedCars.length - 1;
+                    state.condition = 100;
+                    triggerFloat("VIGILANTE UNLOCKED!", "#fbbf24");
+                    updateUI();
+                    if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
+                }
+            });
         }
 
         function updateTutorial() {
@@ -1361,32 +1354,32 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
 
         function repair() {
     triggerHaptic(15);
-    
+
     // We get the specific active car object first
     const activeCarObject = state.ownedCars[state.currentCarIndex];
 
     // If there is no car, or if the car is already at or above 100%, we fail.
-    if (state.currentCarIndex === -1 || !activeCarObject || activeCarObject.condition >= 100) { 
-        sfxError(); 
-        triggerFloat("Already Mint!", "#ef4444"); 
-        return; 
+    if (state.currentCarIndex === -1 || !activeCarObject || activeCarObject.condition >= 100) {
+        sfxError();
+        triggerFloat("Already Mint!", "#ef4444");
+        return;
     }
 
     sfxClick();
-    
+
     // WE REPAIR THE CAR OBJECT DIRECTLY
     activeCarObject.condition = Math.min(100, activeCarObject.condition + 10);
-    
+
     // Then we update the central state condition to match
     state.condition = activeCarObject.condition;
-    
+
     // TIMED REPAIR VISUALS: Flashes green on the health bar
     const pbar = document.getElementById('progress-bar');
     if(pbar) {
         pbar.classList.add('bg-green-400');
         setTimeout(() => pbar.classList.remove('bg-green-400'), 200);
     }
-    
+
     updateUI(); // Refresh the UI to show the new health (and enable detailing/selling)
 }
 
@@ -1419,29 +1412,23 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
         function claimDaily() {
             triggerHaptic(20);
             sfxClick();
-            if (typeof PokiSDK !== 'undefined') {
-                if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
-
-                PokiSDK.rewardedBreak().then((success) => {
-                    if(success) {
-                        sfxSuccess(); spawnParticles();
-                        state.money += 1000000;
-                        state.diamonds += 10;
-                        spawnCashPop(1000000);
-                        updateUI();
-                    } else {
-                        sfxError();
-                        triggerFloat("REWARD FAILED", "#ef4444");
-                    }
+            if (document.getElementById('bg-music')) document.getElementById('bg-music').pause();
+            window.CrazyGames.SDK.ad.showAd('rewarded', {
+                adStarted: () => {},
+                adError: (err) => {
+                    sfxError();
+                    triggerFloat("REWARD FAILED", "#ef4444");
                     if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
-                });
-            } else {
-                sfxSuccess(); spawnParticles();
-                state.money += 1000000;
-                state.diamonds += 10;
-                spawnCashPop(1000000);
-                updateUI();
-            }
+                },
+                adFinished: () => {
+                    sfxSuccess(); spawnParticles();
+                    state.money += 1000000;
+                    state.diamonds += 10;
+                    spawnCashPop(1000000);
+                    updateUI();
+                    if (document.getElementById('bg-music') && audioStarted) document.getElementById('bg-music').play();
+                }
+            });
         }
 
         function toggleInterior() { triggerHaptic(10); sfxClick(); if (state.currentCarIndex !== -1) { isInterior = !isInterior; const btn = document.getElementById('view-mode-text'); if(btn) btn.innerText = isInterior ? "Outside" : "Inside"; updateUI(); } }
@@ -1545,7 +1532,7 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
         // 1. CLEAR the customer modal immediately so it can't be clicked twice
         const modal = document.getElementById('customer-modal');
         if(modal) modal.classList.remove('active');
-        state.currentCustomer = null; 
+        state.currentCustomer = null;
 
         // 2. DELETE the sold car from the garage array
         state.ownedCars.splice(state.currentCarIndex, 1);
@@ -1553,13 +1540,13 @@ if(get('speed-display')) get('speed-display').innerText = displaySpeed + " km/h"
         // 3. LOGIC HANDOFF: Decide which car becomes active next
         if (state.ownedCars.length > 0) {
             // A car exists. We reset the index to 0 (the new "first" car)
-            state.currentCarIndex = 0; 
+            state.currentCarIndex = 0;
             const newActiveCar = state.ownedCars[state.currentCarIndex];
-            
+
             // WE MUST RESET THE CENTRAL STATE CONDITION TO MATCH THE NEW CAR
             // This line fixes the Ford GT appearing as 100% repaired.
             state.condition = newActiveCar.condition !== undefined ? newActiveCar.condition : 30;
-            
+
         } else {
             // Garage is empty. Clean everything.
             state.currentCarIndex = -1;
